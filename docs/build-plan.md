@@ -15,7 +15,7 @@ Stages 0–13 = report Phase 1 (MVP). Stages 14–16 = Phase 2. Stages 17–18 =
 ## Stage 0 — Project scaffold & engineering rig
 
 ```
-Create a new Laravel 12 project named "magna" in C:\Users\jishn\Herd\magna and set up the engineering rig for a long-running open-source project.
+Create a new Laravel 13 project named "magna" in C:\Users\jishn\Herd\magna and set up the engineering rig for a long-running open-source project.
 
 Context: This is Magna CMS, an API-first headless CMS. The full specifications live in "C:\Users\jishn\Herd\Magna CMS\docs\" and "C:\Users\jishn\Herd\Magna CMS\Magna-v2.md". First, copy Magna-v2.md and the entire docs folder into the new project under docs/ — these specs are the contract for everything we build. Read Magna-v2.md fully before doing anything else.
 

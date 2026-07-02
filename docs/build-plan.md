@@ -6,10 +6,10 @@
 > All spec documents live inside this repo under `docs/` — there is no external specs folder.
 > **Stage 0 is complete** — check [PROGRESS.md](../PROGRESS.md) for current status before starting any stage.
 
-1. Run **one stage per Claude Code session**, in order. Don't combine stages.
-2. Open Claude Code in the project folder `C:\Users\jishn\Herd\magna-cms` and paste the stage's prompt.
-3. A stage is done only when its **acceptance criteria** pass. If Claude says done, ask it to run the tests and show the output.
-4. After each stage: review the diff, commit. The prompts tell Claude to update `PROGRESS.md` — that file is how the *next* session knows where things stand.
+1. Run **one stage per focused work session**, in order. Don't combine stages.
+2. Work from the project root; each stage's brief below defines its full scope.
+3. A stage is done only when its **acceptance criteria** pass — run the tests and check the output.
+4. After each stage: review the diff, commit, and update `PROGRESS.md` — that file is how the *next* session knows where things stand.
 5. If a session goes sideways, revert to the last commit and re-run the prompt. Never build a stage on top of a broken one.
 
 Stages 0–13 = report Phase 1 (MVP). Stages 14–16 = Phase 2. Stages 17–18 = Phase 3 (Pages + theme).
@@ -379,4 +379,4 @@ Remaining Phase 3+ work (GraphQL plugin, semantic search, AI plugin, realtime, e
 - Never weaken a failing test to pass a stage; fix the code or flag the spec conflict in PROGRESS.md.
 - Any deviation from the docs/ specs requires an ADR in docs/adr/ — the specs change consciously or not at all.
 - Commit messages: `stage-N: <what>`, one stage may be several commits.
-- If context runs out mid-stage, ask Claude to update PROGRESS.md with exact remaining work first — the next session resumes from it.
+- If a session ends mid-stage, update PROGRESS.md with the exact remaining work first — the next session resumes from it.

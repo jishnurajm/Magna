@@ -10,7 +10,7 @@
   <a href="#-status"><img src="https://img.shields.io/badge/status-in%20development-orange" alt="Status"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="License: MIT"></a>
   <img src="https://img.shields.io/badge/PHP-8.3%2B-777BB4?logo=php&logoColor=white" alt="PHP 8.3+">
-  <img src="https://img.shields.io/badge/Laravel-12-FF2D20?logo=laravel&logoColor=white" alt="Laravel 13">
+  <img src="https://img.shields.io/badge/Laravel-13-FF2D20?logo=laravel&logoColor=white" alt="Laravel 13">
   <img src="https://img.shields.io/badge/PostgreSQL-first-4169E1?logo=postgresql&logoColor=white" alt="PostgreSQL first">
 </p>
 

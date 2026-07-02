@@ -53,6 +53,15 @@ it('quotes values containing spaces and escapes quotes', function (): void {
         ->and($contents)->toContain('DB_PASSWORD="pa\"ss word"');
 });
 
+it('strips newlines so a value cannot inject additional env entries', function (): void {
+    (new EnvWriter($this->path))->set(['APP_NAME' => "Legit\nDANGER=1"]);
+
+    $contents = (string) file_get_contents($this->path);
+
+    expect($contents)->toContain('APP_NAME="Legit DANGER=1"')
+        ->and($contents)->not->toMatch('/^DANGER=/m');
+});
+
 it('does not partially match longer key names', function (): void {
     file_put_contents($this->path, "DB_PASSWORD_FALLBACK=keep\nDB_PASSWORD=old\n");
 

@@ -6,7 +6,9 @@ use Illuminate\Support\Facades\Route;
 use Magna\Install\Http\InstallController;
 use Magna\Install\Http\Middleware\EnsureNotInstalled;
 
-Route::middleware(['web', EnsureNotInstalled::class])->prefix('install')->group(function (): void {
+// Throttled: the database "test connection" probe must not be usable as a
+// port-scanning oracle by whoever finds an uninstalled site first.
+Route::middleware(['web', EnsureNotInstalled::class, 'throttle:30,1'])->prefix('install')->group(function (): void {
     Route::get('/', [InstallController::class, 'requirements']);
     Route::get('/site', [InstallController::class, 'site']);
     Route::post('/site', [InstallController::class, 'storeSite']);

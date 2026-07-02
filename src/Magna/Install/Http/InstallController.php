@@ -52,7 +52,7 @@ class InstallController
     {
         $request->validate([
             'name' => ['required', 'string', 'max:100'],
-            'url' => ['required', 'url', 'max:255'],
+            'url' => ['required', 'url:http,https', 'max:255'],
             'production' => ['nullable', 'boolean'],
         ]);
 
@@ -64,6 +64,8 @@ class InstallController
             'APP_ENV' => $production ? 'production' : 'local',
             'APP_DEBUG' => $production ? 'false' : 'true',
         ]);
+
+        $this->clearCachedConfig();
 
         return redirect('/install/database');
     }
@@ -105,6 +107,8 @@ class InstallController
         if (! defined('PASSWORD_ARGON2ID')) {
             $this->env->set(['HASH_DRIVER' => 'bcrypt']);
         }
+
+        $this->clearCachedConfig();
 
         // Migrate and seed through the verified connection.
         config(['database.default' => 'magna']);
@@ -230,6 +234,17 @@ class InstallController
         $path = $request->string('sqlite_path')->toString();
 
         return $path === '' ? database_path('database.sqlite') : $path;
+    }
+
+    /**
+     * A cached configuration would keep serving stale values and silently
+     * ignore everything the installer just wrote to .env.
+     */
+    private function clearCachedConfig(): void
+    {
+        if (app()->configurationIsCached()) {
+            Artisan::call('config:clear');
+        }
     }
 
     private function friendlyDatabaseError(Throwable $e): string

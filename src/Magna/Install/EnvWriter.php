@@ -52,6 +52,9 @@ final class EnvWriter
 
     private function formatValue(string $value): string
     {
+        // Newlines in a value would let one entry inject further entries.
+        $value = str_replace(["\r", "\n"], ' ', $value);
+
         if ($value === '' || preg_match('#^[A-Za-z0-9_./:\\\\-]+$#', $value) === 1) {
             return $value;
         }

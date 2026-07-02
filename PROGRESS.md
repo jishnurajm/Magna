@@ -53,6 +53,7 @@ Tracks progress against [docs/build-plan.md](docs/build-plan.md). Every session 
 - Gotchas learned: middleware pushed to the `web` group from a provider is wiped by the bootstrap middleware sync — append in `bootstrap/app.php` instead. Installer flow tests are exempt from `RefreshDatabase` (they migrate their own connection); **new Feature test directories must be added to the RefreshDatabase line in tests/Pest.php**.
 - Tests: `MAGNA_INSTALLED=true` in phpunit.xml makes the suite run "as installed"; installer tests override `magna.installed_override`/lock/env paths to temp dirs.
 - The local dev site is intentionally left uninstalled so the installer can be tried at `http://magna-cms.test`.
+- Full spec + **known limitations / future-edit checklist** in [docs/installer.md](docs/installer.md) — revisit at Stage 13 (security pass). Post-review hardening applied: env newline-injection stripped, URL restricted to http/https, installer routes throttled, cached config auto-cleared after .env writes.
 
 ## Notes for next session (Stage 2)
 

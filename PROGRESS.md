@@ -42,6 +42,18 @@ Tracks progress against [docs/build-plan.md](docs/build-plan.md). Every session 
 - Core kernel permission keys registered in `AuthServiceProvider` (users/roles/settings/plugins/audit). Seeder: super-admin, admin, editor (`content.*`, `media.*`), viewer (`content.*.view`) — wildcards resolve when content permissions register in Stage 6.
 - Tests: 45 passing (83 assertions); argon costs lowered in phpunit.xml for speed. `magna:permissions:list` verified live.
 
+## Off-plan: Web installer (2026-07-02)
+
+- WordPress-style browser installer at `/install`, built in `src/Magna/Install` (requested outside the stage plan; kernel-only dependencies so it slots after Stage 1).
+- Flow: requirements check (required + recommended, incl. Argon2id/HTTPS/Redis) → site name/URL/production toggle → database (PostgreSQL/MySQL/MariaDB/SQLite, connection probed with friendly errors before anything is written, then migrate + seed) → super-admin account → lock.
+- **Stateless steps**: each step writes straight to `.env` (`EnvWriter` — updates in place, preserves comments, quotes safely). No session state to corrupt.
+- **Bare-server bootstrap**: when uninstalled, sessions are forced to the `file` driver and a missing `APP_KEY` is self-generated and persisted (`InstallServiceProvider::prepareUninstalledRuntime`).
+- **Security**: `EnsureNotInstalled` 404s all installer routes once the lock (`storage/app/magna-installed.json`) exists; `RedirectIfNotInstalled` sends all web traffic to the installer until then. Argon2id fallback to bcrypt is written to `.env` if the platform lacks it.
+- Zero build/CDN dependencies: pure Blade + embedded CSS (dark UI), tiny vanilla JS for the driver toggle.
+- Gotchas learned: middleware pushed to the `web` group from a provider is wiped by the bootstrap middleware sync — append in `bootstrap/app.php` instead. Installer flow tests are exempt from `RefreshDatabase` (they migrate their own connection); **new Feature test directories must be added to the RefreshDatabase line in tests/Pest.php**.
+- Tests: `MAGNA_INSTALLED=true` in phpunit.xml makes the suite run "as installed"; installer tests override `magna.installed_override`/lock/env paths to temp dirs.
+- The local dev site is intentionally left uninstalled so the installer can be tried at `http://magna-cms.test`.
+
 ## Notes for next session (Stage 2)
 
 - Follow the Stage 2 prompt in docs/build-plan.md: authentication & API tokens.

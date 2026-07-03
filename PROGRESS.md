@@ -14,7 +14,7 @@ Tracks progress against [docs/build-plan.md](docs/build-plan.md). Every session 
 - [x] **Stage 5 — Content Engine I: schemas & generated tables**
 - [x] **Stage 6 — Content Engine II: entries, drafts, revisions, publishing**
 - [x] **Stage 7 — Media**
-- [ ] Stage 8 — Delivery REST API
+- [x] **Stage 8 — Delivery REST API**
 - [ ] Stage 9 — Management API & webhooks
 - [ ] Stage 10 — Admin panel (Filament)
 - [ ] Stage 11 — Blocks & the structured block editor
@@ -169,9 +169,30 @@ Tracks progress against [docs/build-plan.md](docs/build-plan.md). Every session 
   - `magna:media:reconvert` queues 6 jobs (2 images × 3 presets, SVG excluded) ✓
 - Tests: **203 passing (472 assertions)**; PHPStan 0 errors; Pint clean.
 
-## Notes for next session (Stage 8)
+## Stage 8 notes (2026-07-03)
 
-- Stage 8 — Delivery REST API: read-only content endpoints, media URL resolution, pagination, filtering.
-- `MediaViewObject` is implemented and ready to be wired into entry responses.
-- `magna.media.serve` route exists but needs preset resolution and optional auth middleware (Stage 8).
-- `MediaField::cast()` returns `null` (stores raw ULID); Stage 8 should add response transformation to resolve ULIDs → `MediaViewObject`.
+- Delivery REST API in `src/Magna/Delivery/`. Key pieces:
+  - **`GET /api/v1/content/{type}`** — list endpoint: published-only by default, `?fields=`, `?with=`, `?filter[field][op]=value` (safe operator allowlist), `?sort=`, `?per_page=`, `?cursor=`. Response envelope: `{ data, meta: { next_cursor, has_more, per_page }, included }`.
+  - **`GET /api/v1/content/{type}/{idOrSlug}`** — single endpoint: ULID or slug lookup. `?preview=1&preview_token=` admits draft entries when token valid.
+  - **`POST /api/v1/content/{type}/{id}/preview-token`** — management scope only; mints entry-scoped HMAC-signed preview tokens. Uses `Carbon::now()->getTimestamp()` (not `time()`) so test time travel works.
+  - **`GET /api/v1/openapi.json`** — management scope only; generated spec from all registered types.
+  - **`DeliveryQueryBuilder`** — `?filter[field][op]=value` with safe operator allowlist (`eq/neq/lt/lte/gt/gte/like/in/nin`). Validates column against schema + base set. PHPStan proves `OP_MAP` offset always exists after `in`/`nin` branches.
+  - **`CursorPaginator`** — ULID-keyset, newest-first default. URL-safe base64 encoding (`+/` → `-_`, no padding). Cursor validation uses `/^[0-9A-Z]{26}$/i` (case-insensitive) + `strtolower()` normalisation — `HasUlids` stores lowercase ULIDs; cursor regex must accept both cases.
+  - **`RelationLoader`** — single pivot query + one entry query per distinct relation type; ≤4 total queries (1 entries + 1 pivot + 1 relations + 1 media, regardless of entry count).
+  - **`EntryTransformer`** — base fields always present; column fields filtered by `?fields=`; relation fields only when populated via `?with=`. Media resolved from `mediaCache` (preloaded). Uses `isJsonColumn()` (public) NOT `boolOption('multiple')` (protected) to detect multi-media fields.
+  - **`ETagService`** — SHA-256 hash of serialized response JSON. `check()` and `store()` must use identical tag set `['magna.delivery', 'magna.delivery.type.{handle}']` (tagged cache requires exact match for reads). `invalidateType()` flushes by single tag (asymmetric flush works).
+  - **`SurrogateKeyCollector`** — builds `type:{handle} entry:{ulid} media:{ulid}` header for CDN tag-based invalidation.
+  - **`OpenApiGenerator`** — walks `SchemaRegistry`, produces OpenAPI 3.1 paths + schema components per type.
+  - **`DeliveryServiceProvider`** — registers singletons + binds controllers; boots routes under `api` middleware + `api/v1` prefix.
+- **Key bugs fixed post-build**:
+  - `strtoupper($id)` in single controller → changed to `strtolower($id)` (`HasUlids` stores lowercase).
+  - Cursor regex `/^[0-9A-Z]{26}$/` → `/^[0-9A-Z]{26}$/i` + `strtolower($decoded)` for lowercase ULID cursor values.
+  - `ETagService::check()` used `Cache::tags(['magna.delivery'])` but `store()` used two tags → `check()` now requires `typeHandle` and uses matching two-tag set.
+  - `magna_relations` test insert missing `id` ULID + timestamps → added.
+  - `PreviewTokenService` used `time()` (ignores test time travel) → changed to `Carbon::now()->getTimestamp()`.
+  - Query count test counted token auth overhead (find token + load user + last_used_at update = 3 queries) against a ≤4 budget → now filters to `magna_*` table queries only.
+- Tests: **240 passing (580 assertions)**; PHPStan 0 errors; Pint clean.
+
+## Notes for next session (Stage 9)
+
+- Stage 9 — Management API & webhooks: CRUD endpoints for entries/media/schemas, webhook delivery, event subscriptions.

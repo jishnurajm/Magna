@@ -11,7 +11,7 @@ Tracks progress against [docs/build-plan.md](docs/build-plan.md). Every session 
 - [x] **Stage 2 — Kernel: authentication & API tokens**
 - [x] **Stage 3 — Kernel: settings system & audit log**
 - [x] **Stage 4 — Plugin system**
-- [ ] Stage 5 — Content Engine I: schemas & generated tables
+- [x] **Stage 5 — Content Engine I: schemas & generated tables**
 - [ ] Stage 6 — Content Engine II: entries, drafts, revisions, publishing
 - [ ] Stage 7 — Media
 - [ ] Stage 8 — Delivery REST API
@@ -96,7 +96,27 @@ Tracks progress against [docs/build-plan.md](docs/build-plan.md). Every session 
 - Stubbed for later: content type registration (Stage 5), blocks (Stage 11), entry form extensions (Stage 10), API query filters (Stage 8), webhook events (Stage 9).
 - Tests: 141 passing (328 assertions); 28 new tests across PluginLifecycleTest and HelloWorldPluginTest.
 
-## Notes for next session (Stage 5)
+## Stage 5 notes (2026-07-03)
 
-- Follow the Stage 5 prompt in docs/build-plan.md: Content Engine I (schemas & generated tables).
-- Plugin schemas (`schemas/`) are registered on enable — stub the registration point is already in place in PluginManager (see TODO Stage 5 comment in dispatchContractsFor).
+- Content Engine I in `src/Magna/Content/`. Key pieces:
+  - **16 FieldType classes** (`text`, `textarea`, `richtext`, `markdown`, `number`, `boolean`, `date`, `datetime`, `select`, `media`, `relation`, `blocks`, `json`, `slug`, `email`, `url`, `color`) — each declares `isJsonColumn()`, `isRelationOnly()`, `addColumn()`, `validationRules()`, `cast()`.
+  - **`ContentType` value object** — `fromArray()` accepts `array<mixed, mixed>` (json_decode output). Validates field handles against reserved column names (`id`, `status`, `locale`, etc.).
+  - **`FieldTypeRegistry`** — maps type name strings to FieldType class-strings. `make()` returns the FieldType instance.
+  - **`SchemaRegistry`** — loads from app `schemas/` dir, enabled plugins' `schemas/` dirs (Stage 4 stub filled), and `content_types` table.
+  - **`TableGenerator`** — creates `magna_entries_{handle}` with 7 fixed columns + dynamic field columns. Relation fields use `magna_relations` pivot (no column in entry table). GIN indexes on Postgres only.
+  - **`SchemaDiffer`** — compares registered schemas vs live DB. Uses `Schema::getColumnListing()` for column existence and `content_types` table for type change detection (driver-independent).
+  - **`SchemaSyncer`** — applies diff plan. Wraps in `DB::transaction()` on Postgres; SQLite skips (no transactional DDL). `DestructiveChangeException` if destructive changes without `--allow-destructive`. Updates `content_types` record after every sync.
+  - **`magna:schema:diff`** and **`magna:schema:sync --allow-destructive`** commands.
+  - **Migrations**: `content_types` (ULID PK, handle unique, schema JSON) + `magna_relations` (shared pivot, indexed both directions).
+- PHPStan issue: `json_decode()` → `array<mixed, mixed>` vs `array<string, mixed>` — resolved by accepting `array<mixed, mixed>` in `fromArray()` and using key-iteration to build the `array<string, mixed>` options map.
+- Tests: 31 new tests (21 table-generation per field type, 7 diff/sync/idempotency/guard, 2 plugin schema, 1 relations pivot) across `Feature/Content/`. Same Pest convention as `Feature/Plugins/`: explicit `uses()` per file, no global list entry.
+- Tests: 172 passing (385 assertions); PHPStan 0 errors; Pint clean.
+
+## Notes for next session (Stage 6)
+
+- Stage 6 — Content Engine II: entries, drafts, revisions, publishing.
+- Entry model: `Entry::type('article')` returns an Eloquent builder bound to `magna_entries_article`.
+- Status workflow: `draft` → `published` → `archived`; `draftable: false` types skip draft.
+- Revisions: `magna_revisions` table; `magna:revisions:prune`.
+- Events: `EntryCreated`, `EntryUpdated`, `EntryPublished`, `EntryUnpublished`, `EntryDeleted`.
+- Content permissions auto-generated per type: `content.{handle}.view/create/update/publish/delete`.

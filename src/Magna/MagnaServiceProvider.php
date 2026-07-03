@@ -7,6 +7,7 @@ namespace Magna;
 use Illuminate\Support\ServiceProvider;
 use Magna\Audit\AuditServiceProvider;
 use Magna\Auth\AuthServiceProvider;
+use Magna\Content\ContentServiceProvider;
 use Magna\Install\InstallServiceProvider;
 use Magna\Plugins\PluginsServiceProvider;
 use Magna\Settings\SettingsServiceProvider;
@@ -27,6 +28,7 @@ class MagnaServiceProvider extends ServiceProvider
         $this->app->register(AuthServiceProvider::class);
         $this->app->register(InstallServiceProvider::class);
         $this->app->register(AuditServiceProvider::class);
+        $this->app->register(ContentServiceProvider::class);
         $this->app->register(PluginsServiceProvider::class);
     }
 

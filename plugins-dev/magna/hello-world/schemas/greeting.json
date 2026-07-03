@@ -1,0 +1,11 @@
+{
+    "handle": "greeting",
+    "displayName": "Greeting",
+    "localizable": false,
+    "draftable": false,
+    "fields": [
+        { "handle": "message", "type": "text", "required": true },
+        { "handle": "recipient", "type": "text" },
+        { "handle": "metadata", "type": "json" }
+    ]
+}

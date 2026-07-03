@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
 use Magna\Auth\PermissionRegistry;
+use Magna\Content\SchemaRegistry;
 use Magna\Contracts\RegistersAdminNavigation;
 use Magna\MagnaServiceProvider;
 use Magna\Plugins\Exceptions\PluginCompatibilityException;
@@ -257,6 +258,14 @@ class PluginManager
                 'magna.nav.'.$plugin->getManifest()->name,
                 $plugin->adminNavigation(),
             );
+        }
+
+        // Load plugin content type schemas from schemas/ directory.
+        $schemasDir = $plugin->getBasePath().'/schemas';
+        if (is_dir($schemasDir)) {
+            /** @var SchemaRegistry $schemaRegistry */
+            $schemaRegistry = $this->app->make(SchemaRegistry::class);
+            $schemaRegistry->loadFromDirectory($schemasDir);
         }
 
         // TODO Stage 10: RegistersDashboardWidgets

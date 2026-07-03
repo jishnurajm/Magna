@@ -18,3 +18,6 @@ pest()->extend(TestCase::class)->use(RefreshDatabase::class)->in(
     'Feature/Settings',
     'Feature/Audit',
 );
+// Feature/Content and Feature/Plugins are NOT in the global list because some
+// tests in those directories use PluginTestCase (a different base class).
+// They declare uses() explicitly at the top of each file instead.

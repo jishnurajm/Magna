@@ -23,6 +23,8 @@
 
 **Magna is in active development and not yet ready for production.** We are building in public, spec-first: every subsystem is fully specified *before* it is coded, and the specifications live in this repository — [read them](#-documentation), challenge them, help shape them. Watch/star the repo to follow the road to 1.0. The [build plan](docs/build-plan.md) shows exactly where we are.
 
+**Already working today:** the [browser installer](docs/installer.md) (unzip → open → install, WordPress-style), the RBAC kernel (wildcard permission grants, super-admin bypass, in-code permission registry), authentication with per-role enforceable TOTP 2FA and scoped expiring API tokens, the typed settings system, and the append-only audit log — every piece landing with PHPStan level 9 and a growing test suite ([PROGRESS.md](PROGRESS.md)).
+
 ---
 
 ## What is Magna?
@@ -53,7 +55,7 @@ Headless purity has a famous cost: install it and you see… an API. Magna's ans
 Magna publishes **CI-enforced latency budgets** — e.g. delivery API < 10 ms p99 cached / < 50 ms uncached against a 100k-entry dataset — with the benchmark harness *in this repo* so anyone can reproduce the numbers. Nightly CI fails on >10 % regression; every release publishes its deltas. And **tag-based cache invalidation is a core primitive**: every response carries surrogate keys, so publishing one entry purges exactly the affected responses — in Redis *and* at the edge (Cloudflare/Fastly/Varnish drivers built in). No "clear all cache" button as a way of life. ([Performance spec](docs/performance-spec.md))
 
 ### 🔐 4. Security as a process with proof
-Target: **OWASP ASVS Level 2, verified by a third-party audit before 1.0**, results published. Hardened defaults (per-role enforceable 2FA, scoped expiring tokens, default-deny CORS, uploads re-encoded to strip payloads), signed releases with per-release SBOMs, and one genuine first: **field-level encryption as a schema attribute** — mark any content field `"encrypted": true` and it's encrypted at rest, no other mainstream open-source CMS offers that as a first-class primitive. We're also honest about limits: PHP cannot sandbox in-process plugins, so the plugin trust model is transparency + review gates + a kill switch — stated plainly instead of papered over. ([Security spec](docs/security-spec.md))
+Target: **OWASP ASVS Level 2, verified by a third-party audit before 1.0**, results published. Hardened defaults ship enabled, not documented as "recommended hardening": Argon2id password hashing, per-role *enforceable* 2FA, scoped expiring API tokens (read-only delivery vs. management, hashed at rest, shown once), exponential-backoff login lockout, default-deny CORS on management APIs, uploads content-sniffed and re-encoded to strip embedded payloads, an append-only audit log with SIEM export, registration off by default — and a self-locking installer that returns 404 forever once setup completes. Supply chain: signed releases, per-release SBOMs, `composer audit` + taint analysis in CI. And one genuine first: **field-level encryption as a schema attribute** — mark any content field `"encrypted": true` and it's encrypted at rest; no other mainstream open-source CMS offers that as a first-class primitive. We're also honest about limits: PHP cannot sandbox in-process plugins, so the plugin trust model is transparency + review gates + a kill switch — stated plainly instead of papered over. ([Security spec](docs/security-spec.md))
 
 ### 📐 5. Schema as code
 Content types are versionable files. Build your model in the admin, export it, commit it, and `magna:schema:sync` replays it on staging and production — with a diff preview and destructive-change guards. Content modeling finally works like migrations: reviewable, repeatable, in git. Under the hood there's **no EAV**: each content type gets a real table with real columns and real indexes, generated from its schema.
@@ -66,6 +68,9 @@ Magna Pages themes are **presentation-only packages** — Blade views, design to
 
 ### ✍️ 8. A block editor that respects your time (and ours)
 Content is composed from **portable JSON blocks** — rendered as Blade views by Pages, or as your own React/Vue components headlessly. The editor is a structured block list with live preview via signed draft URLs (draft preview for Next.js/Nuxt is first-class, not an afterthought). We deliberately did **not** clone Gutenberg — a canvas editor is a multi-year detour; a great structured editor is 80 % of the value at 5 % of the cost.
+
+### 🛡️ 9. A fault-tolerant plugin runtime
+No CMS on any runtime truly sandboxes in-process plugins — including the Node ones. Magna's answer is **bounded blast radius with automatic recovery**: every plugin hook runs through a guarded dispatcher with safe defaults (a crashing plugin costs its own widget, not your page), a **circuit breaker** auto-disables repeat offenders, a shutdown handler attributes even fatal errors to the plugin that caused them, heavy hooks run on queue workers instead of web workers, and `MAGNA_SAFE_MODE=1` boots with all plugins off when you need a rescue hatch. Fully isolated **remote apps** (API + webhooks only, the Shopify model) arrive with the open store. ([Isolation architecture](docs/plugin-isolation.md))
 
 ## How it compares
 
@@ -80,6 +85,8 @@ Content is composed from **portable JSON blocks** — rendered as Blade views by
 | Surrogate-key edge purge in core | ✅ | ❌ | ❌ | ❌ | ❌ |
 | Field-level encryption in schema | ✅ | ❌ | ❌ | ❌ | ❌ |
 | Schema as code w/ env sync | ✅ | ⚠️ partial | ⚠️ partial | ✅ | ❌ |
+| Plugin crash containment (breaker + safe mode) | ✅ | ❌ | ❌ | ❌ | ⚠️ recovery mode |
+| Browser installer (unzip & go) | ✅ | ❌ | ❌ | ❌ | ✅ |
 | Runs on ordinary PHP hosting | ✅ | ❌ | ❌ | ❌ | ✅ |
 
 *(Comparisons reflect core capabilities at the time of writing; corrections welcome — open an issue.)*
@@ -106,13 +113,17 @@ Content is composed from **portable JSON blocks** — rendered as Blade views by
                       └────────────────────────────────────────┘
 ```
 
-**Stack:** Laravel 12 · PHP 8.3+ · PostgreSQL-first (MySQL/MariaDB/SQLite supported) · Filament 4 admin · Redis · FrankenPHP/Octane reference deployment.
+**Stack:** Laravel 13 · PHP 8.3+ (CI-tested on 8.3 and 8.4) · PostgreSQL-first (MySQL/MariaDB/SQLite supported) · Filament 4 admin · Redis · FrankenPHP/Octane reference deployment.
 
-## Quick start *(target DX — lands with the first alpha)*
+## Quick start
+
+**The browser installer works today**: clone the repo, `composer install`, point a web server at it (or `php artisan serve`), open the site — the [installer](docs/installer.md) walks you through requirements, database (PostgreSQL/MySQL/MariaDB/SQLite), and your admin account, then locks itself.
+
+The packaged experience *(lands with the first alpha)*:
 
 ```bash
 composer create-project magna/magna my-site
-php artisan magna:install          # DB, admin user, done
+php artisan magna:install          # or use the browser installer
 php artisan serve                  # admin at /admin, API at /api/v1
 ```
 
@@ -135,6 +146,8 @@ Everything is specified before it's built — the specs are the contract, and th
 | [Default theme spec](docs/default-theme-spec.md) | The reference theme + the standard block library |
 | [Performance spec](docs/performance-spec.md) | The budgets, the benchmark harness, the caching model |
 | [Security spec](docs/security-spec.md) | ASVS target, defaults, supply chain, plugin trust model |
+| [Plugin isolation](docs/plugin-isolation.md) | Fault-tolerant runtime: circuit breaker, safe mode, remote apps |
+| [Installer](docs/installer.md) | The browser installer: flow, security properties, roadmap |
 | [Store plan](docs/store-plan.md) | The official plugin/theme store, staged rollout |
 | [Build plan](docs/build-plan.md) | Stage-by-stage implementation plan and current progress |
 
@@ -152,7 +165,11 @@ The most valuable contribution right now is **review of the specs** — they are
 
 ## 🔒 Security
 
-Found a vulnerability? **Do not open a public issue.** See [SECURITY.md](SECURITY.md) for coordinated disclosure. Security process, supported-versions policy, and audit results are documented in the [security spec](docs/security-spec.md).
+Found a vulnerability? **Do not open a public issue.** See [SECURITY.md](SECURITY.md) for coordinated disclosure.
+
+**Implemented today:** Argon2id hashing (bcrypt auto-fallback) · TOTP 2FA with recovery codes, enforceable per role · scoped, expiring, hashed-at-rest API tokens · exponential-backoff login lockout · append-only audit log · strict security headers + admin CSP · default-deny CORS on management APIs · self-locking, rate-limited installer · registration disabled by default · `composer audit` + PHPStan level 9 in CI.
+
+**Committed before 1.0:** third-party penetration test + OWASP ASVS L2 assessment (published), field-level encryption as a schema attribute, upload re-encoding pipeline, signed releases with per-release SBOMs. Full detail: [security spec](docs/security-spec.md) · [plugin isolation](docs/plugin-isolation.md).
 
 ## 📄 License
 

@@ -46,7 +46,7 @@ final class ContentType
             throw new SchemaException("Content type \"{$handle}\" \"fields\" must be an array.");
         }
 
-        $reserved = ['id', 'status', 'locale', 'published_at', 'author_id', 'created_at', 'updated_at'];
+        $reserved = ['id', 'status', 'locale', 'published_at', 'author_id', 'draft_of', 'created_at', 'updated_at'];
 
         /** @var list<Field> $fields */
         $fields = [];

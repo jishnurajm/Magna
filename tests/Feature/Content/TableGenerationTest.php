@@ -25,6 +25,7 @@ it('creates the entry table with all fixed columns', function (): void {
         ->and(Schema::hasColumn($table, 'locale'))->toBeTrue()
         ->and(Schema::hasColumn($table, 'published_at'))->toBeTrue()
         ->and(Schema::hasColumn($table, 'author_id'))->toBeTrue()
+        ->and(Schema::hasColumn($table, 'draft_of'))->toBeTrue()
         ->and(Schema::hasColumn($table, 'created_at'))->toBeTrue()
         ->and(Schema::hasColumn($table, 'updated_at'))->toBeTrue();
 });

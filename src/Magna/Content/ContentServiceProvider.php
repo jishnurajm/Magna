@@ -4,9 +4,13 @@ declare(strict_types=1);
 
 namespace Magna\Content;
 
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
+use Magna\Auth\PermissionRegistry;
+use Magna\Content\Console\PublishScheduledCommand;
+use Magna\Content\Console\RevisionsPruneCommand;
 use Magna\Content\Console\SchemaDiffCommand;
 use Magna\Content\Console\SchemaSyncCommand;
 use Magna\Content\FieldTypes\BlocksField;
@@ -73,12 +77,26 @@ class ContentServiceProvider extends ServiceProvider
                 $app->make(SchemaDiffer::class),
             );
         });
+
+        $this->app->singleton(SchemaValidator::class);
+        $this->app->singleton(SlugGenerator::class);
+
+        $this->app->singleton(EntryManager::class, function (Application $app): EntryManager {
+            return new EntryManager(
+                $app->make(SchemaRegistry::class),
+                $app->make(SchemaValidator::class),
+                $app->make(SlugGenerator::class),
+            );
+        });
     }
 
     public function boot(): void
     {
         /** @var SchemaRegistry $registry */
         $registry = $this->app->make(SchemaRegistry::class);
+
+        // Auto-register content permissions whenever a type is registered.
+        $this->registerContentPermissions($registry);
 
         $schemasDir = $this->app->basePath('schemas');
         if (is_dir($schemasDir)) {
@@ -89,11 +107,32 @@ class ContentServiceProvider extends ServiceProvider
             $registry->loadFromDatabase();
         }
 
+        $this->callAfterResolving(Schedule::class, function (Schedule $schedule): void {
+            $schedule->command('magna:publish:scheduled')->everyMinute();
+        });
+
         if ($this->app->runningInConsole()) {
             $this->commands([
                 SchemaDiffCommand::class,
                 SchemaSyncCommand::class,
+                PublishScheduledCommand::class,
+                RevisionsPruneCommand::class,
             ]);
         }
+    }
+
+    private function registerContentPermissions(SchemaRegistry $registry): void
+    {
+        /** @var PermissionRegistry $permRegistry */
+        $permRegistry = $this->app->make(PermissionRegistry::class);
+
+        $registry->onTypeRegistered(function (ContentType $type) use ($permRegistry): void {
+            foreach (['view', 'create', 'update', 'publish', 'delete'] as $action) {
+                $key = "content.{$type->handle}.{$action}";
+                if (! $permRegistry->has($key)) {
+                    $permRegistry->register($key, ucfirst($action)." \"{$type->displayName}\" entries");
+                }
+            }
+        });
     }
 }

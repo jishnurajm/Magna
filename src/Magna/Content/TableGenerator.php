@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Schema;
 class TableGenerator
 {
     private const FIXED_COLUMNS = [
-        'id', 'status', 'locale', 'published_at', 'author_id', 'created_at', 'updated_at',
+        'id', 'status', 'locale', 'published_at', 'author_id', 'draft_of', 'created_at', 'updated_at',
     ];
 
     public function createTable(ContentType $type): void
@@ -24,6 +24,7 @@ class TableGenerator
             $table->string('locale', 10)->default('');
             $table->timestamp('published_at')->nullable();
             $table->char('author_id', 26)->nullable();
+            $table->char('draft_of', 26)->nullable()->index();
             $table->timestamps();
 
             foreach ($type->columnFields() as $field) {

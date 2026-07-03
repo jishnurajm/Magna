@@ -12,7 +12,7 @@ Tracks progress against [docs/build-plan.md](docs/build-plan.md). Every session 
 - [x] **Stage 3 — Kernel: settings system & audit log**
 - [x] **Stage 4 — Plugin system**
 - [x] **Stage 5 — Content Engine I: schemas & generated tables**
-- [ ] Stage 6 — Content Engine II: entries, drafts, revisions, publishing
+- [x] **Stage 6 — Content Engine II: entries, drafts, revisions, publishing**
 - [ ] Stage 7 — Media
 - [ ] Stage 8 — Delivery REST API
 - [ ] Stage 9 — Management API & webhooks
@@ -112,11 +112,25 @@ Tracks progress against [docs/build-plan.md](docs/build-plan.md). Every session 
 - Tests: 31 new tests (21 table-generation per field type, 7 diff/sync/idempotency/guard, 2 plugin schema, 1 relations pivot) across `Feature/Content/`. Same Pest convention as `Feature/Plugins/`: explicit `uses()` per file, no global list entry.
 - Tests: 172 passing (385 assertions); PHPStan 0 errors; Pint clean.
 
-## Notes for next session (Stage 6)
+## Stage 6 notes (2026-07-03)
 
-- Stage 6 — Content Engine II: entries, drafts, revisions, publishing.
-- Entry model: `Entry::type('article')` returns an Eloquent builder bound to `magna_entries_article`.
-- Status workflow: `draft` → `published` → `archived`; `draftable: false` types skip draft.
-- Revisions: `magna_revisions` table; `magna:revisions:prune`.
-- Events: `EntryCreated`, `EntryUpdated`, `EntryPublished`, `EntryUnpublished`, `EntryDeleted`.
-- Content permissions auto-generated per type: `content.{handle}.view/create/update/publish/delete`.
+- Content Engine II in `src/Magna/Content/`. Key pieces:
+  - **`Entry` (final)** — dynamic Eloquent model. `Entry::type('article')` returns `Builder<Entry>` bound to `magna_entries_article`. `makeInstance()` configures the table and schema-derived casts. `newInstance()` propagates them to all hydrated results. Casts: `status → EntryStatus` enum, `published_at → datetime`, plus per-field casts from FieldType::cast().
+  - **`EntryStatus` enum** — `draft | scheduled | published | archived`.
+  - **`EntryManager` service** — `create()`, `update()`, `publish()`, `unpublish()`, `delete()`, `createDraftOf()`, `restore()`. Single business-logic entry point; validates via `SchemaValidator` before any write.
+  - **`SchemaValidator`** — validates entry data against schema FieldType rules. Partial mode (for updates) skips absent fields.
+  - **`SlugGenerator`** — `Str::slug()` from source field, uniqueness loop per type+locale.
+  - **`Revision` model** — `magna_revisions` table (ULID PK, `entry_type`, `entry_id`, `payload` JSON, `author_id`, `created_at` only). Overrides `save()`/`delete()` to throw `LogicException` (append-only).
+  - **Draft-of-published pattern** — `createDraftOf()` copies all field values; `publish($draft)` → `publishDraftOf()` snapshots the published state as a revision, overwrites the published entry, and deletes the draft. The canonical entry ID never changes.
+  - **Scheduled publishing** — `publish($entry, $futureCarbon)` → `status = scheduled`. `magna:publish:scheduled` promotes due entries and fires `EntryPublished`.
+  - **`magna:revisions:prune --keep=N`** — keeps newest N revisions per entry via grouped delete.
+  - **5 events** — `EntryCreated`, `EntryUpdated`, `EntryPublished`, `EntryUnpublished`, `EntryDeleted` (each carries entry + actor ID).
+  - **Content permissions** — `SchemaRegistry::onTypeRegistered()` callback auto-registers `content.{handle}.view/create/update/publish/delete` into `PermissionRegistry` whenever any type is registered (including plugin types at boot).
+  - **Fixed columns updated** — `draft_of char(26) nullable` added to all entry tables; `SchemaDiffer::FIXED_COLUMNS` and `ContentType::fromArray()` reserved list both updated.
+- PHPStan: `Entry` is `final` (resolves `new static()` unsafe usage + `Builder<static>` return type mismatch). `mixed`-to-string casts replaced with `is_string()` guards.
+- Tests: 18 new tests in `Feature/Content/EntryTest.php` covering full workflow, scheduling, restore, revision pruning, events, auto-slug uniqueness, non-draftable types, Gate permission enforcement.
+- Tests: 190 passing (435 assertions); PHPStan 0 errors; Pint clean.
+
+## Notes for next session (Stage 7)
+
+- Stage 7 — Media: media library, uploads, image processing, storage abstraction.

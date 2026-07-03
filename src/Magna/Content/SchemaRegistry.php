@@ -13,11 +13,33 @@ class SchemaRegistry
     /** @var array<string, ContentType> */
     private array $types = [];
 
+    /** @var list<callable(ContentType): void> */
+    private array $onRegisterCallbacks = [];
+
     public function __construct(private readonly FieldTypeRegistry $fieldTypes) {}
+
+    /**
+     * Register a callback that fires every time a content type is registered.
+     * Called immediately for types already registered at the time of subscription.
+     *
+     * @param  callable(ContentType): void  $callback
+     */
+    public function onTypeRegistered(callable $callback): void
+    {
+        $this->onRegisterCallbacks[] = $callback;
+
+        foreach ($this->types as $type) {
+            $callback($type);
+        }
+    }
 
     public function register(ContentType $type): void
     {
         $this->types[$type->handle] = $type;
+
+        foreach ($this->onRegisterCallbacks as $callback) {
+            $callback($type);
+        }
     }
 
     /**

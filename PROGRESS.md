@@ -10,7 +10,7 @@ Tracks progress against [docs/build-plan.md](docs/build-plan.md). Every session 
 - [x] **Stage 1 — Kernel: users, roles, permissions (RBAC)**
 - [x] **Stage 2 — Kernel: authentication & API tokens**
 - [x] **Stage 3 — Kernel: settings system & audit log**
-- [ ] Stage 4 — Plugin system
+- [x] **Stage 4 — Plugin system**
 - [ ] Stage 5 — Content Engine I: schemas & generated tables
 - [ ] Stage 6 — Content Engine II: entries, drafts, revisions, publishing
 - [ ] Stage 7 — Media
@@ -82,7 +82,21 @@ Tracks progress against [docs/build-plan.md](docs/build-plan.md). Every session 
 - `magna:audit:export --from --to` command streams JSON lines to stdout in 500-record chunks.
 - Tests: 113 passing (288 assertions) — 2 new test files (SettingsTest 5 tests, AuditLogTest 8 tests).
 
-## Notes for next session (Stage 4)
+## Stage 4 notes (2026-07-03)
 
-- Follow the Stage 4 prompt in docs/build-plan.md: plugin system.
-- `SettingsServiceProvider` is registered BEFORE `AuthServiceProvider` in `MagnaServiceProvider` to ensure `GeneralSettings` is resolvable when auth routes run.
+- Plugin system in `src/Magna/Plugins/`. Core pieces: `Manifest` value object (from magna.json), `ManifestValidator` (all required fields + name format + semver + permission key format), `PluginDiscovery` (scans `vendor/composer/installed.json` for `type: magna-plugin` packages AND `plugins-dev/*/*/magna.json` for dev plugins), `PluginManager` (enable/disable/uninstall/bootEnabledPlugins), `PluginRecord` Eloquent model (`plugins` table, ULID PK).
+- Plugin base class `Magna\Plugins\Plugin` — `register()`/`boot()`/`enable()`/`disable()`. Routes in `routes/api.php` are auto-loaded by `PluginManager` and prefixed at `/api/v1/{slug}/` (slug = last segment of vendor/package name).
+- Compat checking via `composer/semver` (`Semver::satisfies(VERSION, $constraint)`). Core VERSION: `1.0.0-dev` in `MagnaServiceProvider::VERSION`.
+- 7 typed hook contracts in `src/Magna/Contracts/`: `RegistersAdminNavigation` (dispatched at boot, nav stored as `magna.nav.{name}` binding), `RegistersDashboardWidgets`, `RegistersSettingsPages`, `RegistersBlocks`, `ExtendsEntryForm`, `FiltersApiQuery`, `RegistersWebhookEvents`. The last 5 are TODO-marked stubs (wired in Stages 8–11).
+- Supporting value objects: `Magna\Admin\Nav\NavGroup` and `NavItem` — fluent builders used by `RegistersAdminNavigation`.
+- CLI commands: `magna:plugin:make` (scaffolds skeleton + updates composer.json path repo), `magna:plugin:install`, `magna:plugin:enable`, `magna:plugin:disable`, `magna:plugin:uninstall --purge`, `magna:plugin:list`.
+- Test harness: `Magna\Testing\PluginTestCase` (extends TestCase, uses RefreshDatabase) — call `$this->enablePlugin($name)` from Pest `beforeEach()`.
+- Proof plugin: `plugins-dev/magna/hello-world` (type `magna-plugin`, installed via path repo as `require-dev`). Permission `hello-world.greet`, nav registration via `RegistersAdminNavigation`, API route at `GET /api/v1/hello-world/greet`.
+- `PluginTestCase` / `PluginLifecycleTest` cannot share the same Pest global `extend()` because they need different base classes — lifecycle tests use explicit `uses(TestCase::class, RefreshDatabase::class)`.
+- Stubbed for later: content type registration (Stage 5), blocks (Stage 11), entry form extensions (Stage 10), API query filters (Stage 8), webhook events (Stage 9).
+- Tests: 141 passing (328 assertions); 28 new tests across PluginLifecycleTest and HelloWorldPluginTest.
+
+## Notes for next session (Stage 5)
+
+- Follow the Stage 5 prompt in docs/build-plan.md: Content Engine I (schemas & generated tables).
+- Plugin schemas (`schemas/`) are registered on enable — stub the registration point is already in place in PluginManager (see TODO Stage 5 comment in dispatchContractsFor).

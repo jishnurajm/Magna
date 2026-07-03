@@ -8,6 +8,7 @@ use Illuminate\Support\ServiceProvider;
 use Magna\Audit\AuditServiceProvider;
 use Magna\Auth\AuthServiceProvider;
 use Magna\Install\InstallServiceProvider;
+use Magna\Plugins\PluginsServiceProvider;
 use Magna\Settings\SettingsServiceProvider;
 
 /**
@@ -18,7 +19,7 @@ use Magna\Settings\SettingsServiceProvider;
  */
 class MagnaServiceProvider extends ServiceProvider
 {
-    public const VERSION = '0.1.0-dev';
+    public const VERSION = '1.0.0-dev';
 
     public function register(): void
     {
@@ -26,6 +27,7 @@ class MagnaServiceProvider extends ServiceProvider
         $this->app->register(AuthServiceProvider::class);
         $this->app->register(InstallServiceProvider::class);
         $this->app->register(AuditServiceProvider::class);
+        $this->app->register(PluginsServiceProvider::class);
     }
 
     public function boot(): void

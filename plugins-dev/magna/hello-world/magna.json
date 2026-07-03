@@ -1,0 +1,24 @@
+{
+    "name": "magna/hello-world",
+    "displayName": "Hello World",
+    "description": "A minimal example plugin that proves the Magna plugin system works.",
+    "version": "1.0.0",
+    "author": "Magna Team",
+    "license": "MIT",
+    "compat": {
+        "magna": "^1.0",
+        "php": "^8.3"
+    },
+    "entry": "Magna\\HelloWorld\\HelloWorldPlugin",
+    "provides": {
+        "apiRoutes": true,
+        "adminNavigation": true
+    },
+    "permissions": [
+        "hello-world.greet"
+    ],
+    "uninstall": {
+        "tables": [],
+        "contentTypes": []
+    }
+}

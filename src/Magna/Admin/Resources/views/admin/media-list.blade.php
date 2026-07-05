@@ -11,6 +11,7 @@
 .mli-thumb { aspect-ratio: 1; object-fit: cover; }
 .mli-card:hover .mli-overlay { opacity: 1; }
 .mli-overlay { opacity: 0; transition: opacity .18s ease; }
+[x-cloak] { display: none !important; }
 </style>
 @endassets
 
@@ -19,6 +20,8 @@
     x-data="{
         viewMode: localStorage.getItem('magna_media_view') ?? 'grid',
         setView(v) { this.viewMode = v; localStorage.setItem('magna_media_view', v); },
+        showFolders: localStorage.getItem('magna_media_folders') === '1',
+        toggleFolders() { this.showFolders = ! this.showFolders; localStorage.setItem('magna_media_folders', this.showFolders ? '1' : '0'); },
         copyUrl(url) {
             navigator.clipboard.writeText(url).catch(() => {
                 const el = document.createElement('textarea');
@@ -79,12 +82,27 @@
                 <span class="mli-msri text-lg">list</span>
                 <span class="hidden sm:inline">List</span>
             </button>
+
+            {{-- Folders toggle: show/hide the folders section --}}
+            @if($galleryFolders->isNotEmpty())
+            <button
+                @click="toggleFolders()"
+                :class="showFolders
+                    ? 'bg-white dark:bg-slate-700 text-violet-600 dark:text-violet-400 shadow-sm'
+                    : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'"
+                class="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all"
+                title="Show folders"
+            >
+                <span class="mli-msri text-lg">folder</span>
+                <span class="hidden sm:inline">Folders</span>
+            </button>
+            @endif
         </div>
     </div>
 
-    {{-- ─── Folders ──────────────────────────────────────────────────────────── --}}
+    {{-- ─── Folders (toggled from the toolbar) ──────────────────────────────── --}}
     @if($galleryFolders->isNotEmpty())
-    <div>
+    <div x-show="showFolders" x-cloak>
         <p class="text-[10px] uppercase font-bold tracking-widest text-slate-400 dark:text-slate-500 mb-3">Folders</p>
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
             @foreach($galleryFolders as $folder)
@@ -133,6 +151,8 @@
                 $sizeFmt = $item->size >= 1_048_576
                     ? number_format($item->size / 1_048_576, 2) . ' MB'
                     : number_format($item->size / 1_024, 1) . ' KB';
+                // Prefer the title given at upload; fall back to the file name.
+                $displayName = filled($item->title) ? $item->title : $item->original_filename;
             @endphp
             <div class="mli-card group relative bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/50 rounded-2xl overflow-hidden shadow-sm hover:shadow-md hover:border-violet-400/40 dark:hover:border-violet-700/40 transition-all">
 
@@ -202,8 +222,9 @@
 
                 {{-- File info --}}
                 <div class="p-3">
-                    <p class="text-xs font-semibold text-slate-700 dark:text-slate-200 truncate" title="{{ $item->original_filename }}">
-                        {{ $item->original_filename }}
+                    {{-- Trimmed to ~12 chars; full name on hover via the title tooltip. --}}
+                    <p class="text-xs font-semibold text-slate-700 dark:text-slate-200 truncate cursor-default" title="{{ $displayName }}">
+                        {{ Str::limit($displayName, 12, '…') }}
                     </p>
                     <div class="flex items-center gap-1.5 mt-1.5">
                         <span class="text-[10px] font-mono text-slate-400">{{ $sizeFmt }}</span>

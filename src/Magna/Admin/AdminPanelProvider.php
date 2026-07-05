@@ -320,11 +320,12 @@ class AdminPanelProvider extends PanelProvider
             ->renderHook(
                 PanelsRenderHook::FOOTER,
                 fn (): HtmlString => new HtmlString(
-                    '<div class="mx-auto py-3 text-center text-xs text-gray-400 dark:text-gray-500">'
-                    .'Copyright &copy; '.date('Y').' Magna CMS. Developed and maintained by '
-                    .'<a href="https://jrstudios.dev" target="_blank" rel="noopener noreferrer" '
-                    .'class="font-medium text-primary-600 hover:underline dark:text-primary-400">JR Studios</a>'
-                    .' (jrstudios.dev).'
+                    '<div class="mx-auto flex flex-wrap items-center justify-center gap-x-1.5 py-3 text-center text-xs text-gray-400 dark:text-gray-500">'
+                    .'<span>&copy; '.date('Y').' Magna CMS</span>'
+                    .'<span class="opacity-50">&middot;</span>'
+                    .'<a href="https://opensource.org/licenses/MIT" target="_blank" rel="noopener noreferrer" class="hover:underline">MIT Licensed</a>'
+                    .'<span class="opacity-50">&middot;</span>'
+                    .'<span>Developed by <a href="https://jrstudios.dev" target="_blank" rel="noopener noreferrer" class="font-medium text-primary-600 hover:underline dark:text-primary-400">JR Studios</a></span>'
                     .'</div>',
                 ),
             );

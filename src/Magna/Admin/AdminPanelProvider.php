@@ -315,6 +315,17 @@ class AdminPanelProvider extends PanelProvider
                     })();
                     </script>
                 HTML),
+            )
+            // Copyright footer shown at the bottom of every admin page.
+            ->renderHook(
+                PanelsRenderHook::FOOTER,
+                fn (): HtmlString => new HtmlString(
+                    '<div class="mx-auto py-3 text-center text-xs text-gray-400 dark:text-gray-500">'
+                    .'Copyright &copy; '.date('Y').' Magna CMS. Developed and maintained by JR Studios '
+                    .'(<a href="https://jrstudios.dev" target="_blank" rel="noopener noreferrer" '
+                    .'class="font-medium text-primary-600 hover:underline dark:text-primary-400">jrstudios.dev</a>).'
+                    .'</div>',
+                ),
             );
     }
 

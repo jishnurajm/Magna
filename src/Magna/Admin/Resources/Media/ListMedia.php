@@ -61,11 +61,12 @@ class ListMedia extends ListRecords
     }
 
     /**
-     * Constrain a media query to a mime-type category.
+     * Constrain a media query to a mime-type category. Public so the resource
+     * table (list view) can call it via modifyQueryUsing.
      *
      * @param  Builder<Media>  $query
      */
-    private function applyCategory(Builder $query): void
+    public function applyCategory(Builder $query): void
     {
         match ($this->categoryFilter) {
             'images' => $query->where('mime_type', 'like', 'image/%'),

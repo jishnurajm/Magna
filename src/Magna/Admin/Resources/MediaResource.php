@@ -16,6 +16,7 @@ use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\HtmlString;
 use Magna\Admin\Resources\Media\CreateMedia;
@@ -80,12 +81,22 @@ class MediaResource extends \Filament\Resources\Resource
     public static function table(Table $table): Table
     {
         return $table
+            // Respect the category filter set by the MediaStatsWidget cards
+            // (shared with the grid view via the ListMedia page).
+            ->modifyQueryUsing(function (Builder $query, $livewire): void {
+                if (method_exists($livewire, 'applyCategory')) {
+                    $livewire->applyCategory($query);
+                }
+            })
             ->columns([
                 TextColumn::make('original_filename')
-                    ->label('Filename')
-                    ->searchable()
+                    ->label('Name')
+                    // Show the title given at upload; fall back to the file name.
+                    ->state(fn (Media $record): string => filled($record->title) ? $record->title : $record->original_filename)
+                    ->searchable(['title', 'original_filename'])
                     ->sortable()
-                    ->limit(50),
+                    ->limit(28)
+                    ->tooltip(fn (Media $record): string => filled($record->title) ? $record->title : $record->original_filename),
 
                 TextColumn::make('mime_type')
                     ->label('Type')

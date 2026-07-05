@@ -13,6 +13,10 @@ class EntryCounts extends StatsOverviewWidget
 {
     protected static ?int $sort = 1;
 
+    // Render a skeleton immediately, then load counts in a deferred request so
+    // the dashboard shell appears instantly rather than blocking on queries.
+    protected static bool $isLazy = true;
+
     /** @return array<int, Stat> */
     protected function getStats(): array
     {

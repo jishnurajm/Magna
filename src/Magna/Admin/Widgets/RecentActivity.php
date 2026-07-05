@@ -17,6 +17,9 @@ class RecentActivity extends TableWidget
 {
     protected static ?int $sort = 2;
 
+    // Defer the audit-log query so the dashboard shell paints first.
+    protected static bool $isLazy = true;
+
     public $tableRecordsPerPage = 10;
 
     protected static ?string $heading = 'Recent Activity';

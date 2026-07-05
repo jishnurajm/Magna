@@ -77,6 +77,12 @@ class AdminPanelProvider extends PanelProvider
             ->authMiddleware([Authenticate::class])
             ->login()
             // ── Layout ───────────────────────────────────────────────────────
+            //   SPA mode: navigation uses Livewire wire:navigate, so clicking a
+            //   sidebar item swaps content client-side instead of a full page
+            //   reload — no re-download of CSS/JS, no Alpine re-boot. Filament
+            //   also prefetches pages on link hover. This is the biggest single
+            //   win for a native-app feel.
+            ->spa()
             ->sidebarCollapsibleOnDesktop()
             ->maxContentWidth('full')
             // brandName intentionally omitted: the brand logo view already

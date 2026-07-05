@@ -79,13 +79,21 @@ class SystemInfoPage extends Page
         }
 
         file_put_contents($envPath, $content);
-        config(['app.debug' => $newValue]);
+
+        // Do NOT mutate config('app.debug') in-request: Livewire only records
+        // its render-timing $start when debug is on at the *start* of the
+        // request, so flipping it mid-request triggers "Undefined variable
+        // $start". Instead, clear any cached config and reload so the new .env
+        // value takes effect on a fresh request.
+        Artisan::call('config:clear');
 
         Notification::make()
             ->title('Debug mode '.($newValue ? 'enabled' : 'disabled'))
-            ->body('APP_DEBUG updated in .env — active immediately.')
+            ->body('APP_DEBUG updated in .env.')
             ->success()
             ->send();
+
+        $this->redirect(static::getUrl(), navigate: false);
     }
 
     public function runDiagnostics(): void

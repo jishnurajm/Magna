@@ -92,10 +92,11 @@ class AdminPanelProvider extends PanelProvider
             ->brandLogoHeight('1.75rem')
             ->favicon(asset('favicon.svg'))
             // ── User menu ────────────────────────────────────────────────────
+            //   Make the account row (the user's name + avatar at the top of the
+            //   menu) link straight to the profile page, and drop the separate
+            //   "My profile" item so there is a single, obvious entry point.
             ->userMenuItems([
-                MenuItem::make()
-                    ->label('My profile')
-                    ->icon('heroicon-o-user-circle')
+                'account' => MenuItem::make()
                     ->url(fn (): string => ProfilePage::getUrl()),
             ])
             // ── Global search ─────────────────────────────────────────────────

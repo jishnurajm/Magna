@@ -6,6 +6,7 @@ namespace Magna\Admin\Pages;
 
 use Filament\Actions\Action;
 use Filament\Forms\ComponentContainer;
+use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
@@ -43,6 +44,7 @@ class ProfilePage extends Page implements HasForms
         $user = auth()->user();
 
         $this->form->fill([
+            'avatar_path' => $user->avatar_path,
             'name' => $user->name,
             'email' => $user->email,
             'current_password' => '',
@@ -58,6 +60,18 @@ class ProfilePage extends Page implements HasForms
             ->components([
                 Section::make('Personal information')
                     ->schema([
+                        FileUpload::make('avatar_path')
+                            ->label('Profile photo')
+                            ->avatar()
+                            ->image()
+                            ->imageEditor()
+                            ->circleCropper()
+                            ->disk('public')
+                            ->directory('avatars')
+                            ->visibility('public')
+                            ->maxSize(2048)
+                            ->helperText('JPG, PNG, or WebP up to 2 MB.'),
+
                         TextInput::make('name')
                             ->label('Full name')
                             ->required()
@@ -99,12 +113,13 @@ class ProfilePage extends Page implements HasForms
 
     public function save(): void
     {
-        /** @var array{name: string, email: string, current_password: ?string, password: ?string, password_confirmation: ?string} $data */
+        /** @var array{avatar_path: ?string, name: string, email: string, current_password: ?string, password: ?string, password_confirmation: ?string} $data */
         $data = $this->form->getState();
 
         /** @var User $user */
         $user = auth()->user();
 
+        $user->avatar_path = $data['avatar_path'] ?? null;
         $user->name = $data['name'];
 
         if ($data['email'] !== $user->email) {
@@ -120,6 +135,7 @@ class ProfilePage extends Page implements HasForms
 
         // Re-fill with updated data, clearing password fields.
         $this->form->fill([
+            'avatar_path' => $user->avatar_path,
             'name' => $user->name,
             'email' => $user->email,
             'current_password' => '',

@@ -84,6 +84,7 @@ class AdminPanelProvider extends PanelProvider
             // duplicate it on the login header.
             ->brandLogo(fn (): View => view('filament.magna.brand'))
             ->brandLogoHeight('1.75rem')
+            ->favicon(asset('favicon.svg'))
             // ── User menu ────────────────────────────────────────────────────
             ->userMenuItems([
                 MenuItem::make()

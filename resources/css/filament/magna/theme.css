@@ -99,25 +99,44 @@
     box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(124, 58, 237, 0.08);
 }
 
-/* Brand mark on the login page: a clean vertical stack (icon over wordmark).
-   height:auto overrides the topbar rule so icon and text never overlap. */
+/* Brand mark on the login page: the animated logo icon and the "Magna"
+   wordmark sit inline (side by side), centered above the form. */
 .fi-simple-main .magna-brand {
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
-    gap: 0.75rem;
+    justify-content: center;
+    gap: 0.625rem;
     height: auto;
-    padding-bottom: 0.25rem;
 }
 
 .fi-simple-main .magna-brand-icon {
-    width: 3.25rem;
-    height: 3.25rem;
+    width: 2.5rem;
+    height: 2.5rem;
 }
 
 .fi-simple-main .magna-brand-text {
-    font-size: 1.75rem;
-    font-weight: 800;
-    letter-spacing: -0.04em;
+    font-size: 1.625rem;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+}
+
+/* "Sign in" heading: small and quiet, sitting just above the email field
+   rather than as a large title competing with the brand. */
+.fi-simple-header {
+    gap: 0.625rem;
+}
+
+.fi-simple-header-heading {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--gray-300, #cbd5e1);
+}
+
+/* Respect reduced-motion: hold the animated brand spark still. */
+@media (prefers-reduced-motion: reduce) {
+    .mgb-line {
+        animation: none !important;
+    }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════

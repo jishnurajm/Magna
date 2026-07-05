@@ -71,6 +71,16 @@ class SchemaRegistry
         }
     }
 
+    /**
+     * Remove a content type from the in-memory registry. Used when a plugin
+     * that owns the type is disabled or uninstalled, so its navigation and
+     * resources disappear within the same request.
+     */
+    public function forget(string $handle): void
+    {
+        unset($this->types[$handle]);
+    }
+
     public function get(string $handle): ?ContentType
     {
         return $this->types[$handle] ?? null;

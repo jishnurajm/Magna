@@ -8,6 +8,8 @@ use Tests\TestCase;
 
 uses(TestCase::class, RefreshDatabase::class);
 use Magna\Auth\PermissionRegistry;
+use Magna\Content\Models\ContentTypeRecord;
+use Magna\Content\SchemaRegistry;
 use Magna\Plugins\Exceptions\InvalidManifestException;
 use Magna\Plugins\Exceptions\PluginNotFoundException;
 use Magna\Plugins\Manifest;
@@ -141,6 +143,51 @@ it('removes the plugin record on uninstall without purge', function (): void {
     $manager->uninstall('magna/hello-world', purge: false);
 
     expect(PluginRecord::query()->where('name', 'magna/hello-world')->exists())->toBeFalse();
+});
+
+it('removes plugin content types from the registry and content_types table on uninstall', function (): void {
+    /** @var PluginManager $manager */
+    $manager = app(PluginManager::class);
+    $manager->enable('magna/hello-world');
+
+    // Sanity: enabling registered the greeting content type.
+    expect(app(SchemaRegistry::class)->has('greeting'))->toBeTrue()
+        ->and(ContentTypeRecord::query()->where('handle', 'greeting')->exists())->toBeTrue();
+
+    $manager->uninstall('magna/hello-world', purge: false);
+
+    // The orphaned content type must be gone so its sidebar nav disappears;
+    // the data table is preserved because purge was not requested.
+    expect(ContentTypeRecord::query()->where('handle', 'greeting')->exists())->toBeFalse()
+        ->and(app(SchemaRegistry::class)->has('greeting'))->toBeFalse()
+        ->and(Schema::hasTable('magna_entries_greeting'))->toBeTrue();
+});
+
+it('drops content type data tables on uninstall with purge', function (): void {
+    /** @var PluginManager $manager */
+    $manager = app(PluginManager::class);
+    $manager->enable('magna/hello-world');
+
+    $manager->uninstall('magna/hello-world', purge: true);
+
+    expect(ContentTypeRecord::query()->where('handle', 'greeting')->exists())->toBeFalse()
+        ->and(Schema::hasTable('magna_entries_greeting'))->toBeFalse();
+});
+
+it('deactivates plugin content types on disable and restores them on re-enable', function (): void {
+    /** @var PluginManager $manager */
+    $manager = app(PluginManager::class);
+    $manager->enable('magna/hello-world');
+    $manager->disable('magna/hello-world');
+
+    // Disabled plugin must not leave an active content type behind.
+    expect(ContentTypeRecord::query()->where('handle', 'greeting')->exists())->toBeFalse();
+
+    $manager->enable('magna/hello-world');
+
+    // Re-enable restores it even though the physical table already existed.
+    expect(ContentTypeRecord::query()->where('handle', 'greeting')->exists())->toBeTrue()
+        ->and(app(SchemaRegistry::class)->has('greeting'))->toBeTrue();
 });
 
 it('drops declared tables on uninstall with purge', function (): void {

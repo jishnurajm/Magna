@@ -11,7 +11,9 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
 use Magna\Auth\PermissionRegistry;
+use Magna\Content\Models\ContentTypeRecord;
 use Magna\Content\SchemaRegistry;
+use Magna\Content\SchemaSyncer;
 use Magna\Contracts\RegistersAdminNavigation;
 use Magna\MagnaServiceProvider;
 use Magna\Plugins\Exceptions\PluginCompatibilityException;
@@ -100,6 +102,8 @@ class PluginManager
         $this->loadRoutes($plugin);
         $this->registerPermissions($info->manifest);
         $this->dispatchContractsFor($plugin);
+        $this->syncPluginSchemas($plugin);
+        $this->persistPluginContentTypes($plugin);
 
         $this->booted[$name] = $plugin;
     }
@@ -125,6 +129,12 @@ class PluginManager
             $plugin->disable();
         }
 
+        // A disabled plugin must not leave its content types active — otherwise
+        // SchemaRegistry::loadFromDatabase() keeps re-registering them and their
+        // admin navigation lingers. Data tables are preserved (disable never
+        // destroys data); re-enable restores the content_types records.
+        $this->deregisterContentTypes($record, dropTables: false);
+
         $record->update(['enabled' => false, 'disabled_at' => now()]);
     }
 
@@ -144,6 +154,11 @@ class PluginManager
         if ($record->enabled) {
             $this->disable($name);
         }
+
+        // Remove the plugin's content types. Without --purge the entries data
+        // tables are kept (data preserved); with --purge they are dropped along
+        // with any tables the manifest declares.
+        $this->deregisterContentTypes($record, dropTables: $purge);
 
         if ($purge) {
             $this->purge($record);
@@ -242,6 +257,140 @@ class PluginManager
                 }
             }
         }
+    }
+
+    /**
+     * Remove the content types a plugin owns from the registry and the
+     * content_types table so their navigation and resources disappear.
+     * When $dropTables is true, the physical magna_entries_* tables are
+     * dropped too (destructive — purge only).
+     */
+    private function deregisterContentTypes(PluginRecord $record, bool $dropTables): void
+    {
+        if (! Schema::hasTable('content_types')) {
+            return;
+        }
+
+        $registry = $this->app->bound(SchemaRegistry::class)
+            ? $this->app->make(SchemaRegistry::class)
+            : null;
+
+        foreach ($this->ownedContentTypeHandles($record) as $handle) {
+            ContentTypeRecord::query()->where('handle', $handle)->delete();
+            $registry?->forget($handle);
+
+            if ($dropTables) {
+                Schema::dropIfExists('magna_entries_'.$handle);
+            }
+        }
+    }
+
+    /**
+     * Re-assert content_types records for a plugin's types on enable. Needed
+     * because SchemaSyncer skips the upsert when the physical table already
+     * exists (e.g. re-enabling after a non-purge uninstall), which would
+     * otherwise leave the record missing.
+     */
+    private function persistPluginContentTypes(Plugin $plugin): void
+    {
+        if (! Schema::hasTable('content_types') || ! $this->app->bound(SchemaRegistry::class)) {
+            return;
+        }
+
+        /** @var SchemaRegistry $registry */
+        $registry = $this->app->make(SchemaRegistry::class);
+
+        $handles = $this->ownedContentTypeHandles(
+            $plugin->getBasePath(),
+            $plugin->getManifest()->toArray(),
+        );
+
+        foreach ($handles as $handle) {
+            $type = $registry->get($handle);
+            if ($type === null) {
+                continue;
+            }
+
+            ContentTypeRecord::updateOrCreate(
+                ['handle' => $type->handle],
+                [
+                    'display_name' => $type->displayName,
+                    'is_database_defined' => false,
+                    'schema' => $type->toArray(),
+                ],
+            );
+        }
+    }
+
+    /**
+     * The content type handles a plugin owns. Authoritative source is the
+     * plugin's schemas/ directory; the manifest's provides.contentTypes and
+     * uninstall.contentTypes are merged in as a fallback so a plugin can list
+     * types it registers programmatically rather than via schema files.
+     *
+     * @param  array<string, mixed>|null  $manifest
+     * @return list<string>
+     */
+    private function ownedContentTypeHandles(PluginRecord|string $recordOrBasePath, ?array $manifest = null): array
+    {
+        if ($recordOrBasePath instanceof PluginRecord) {
+            $basePath = $recordOrBasePath->base_path;
+            $manifest = $recordOrBasePath->manifest;
+        } else {
+            $basePath = $recordOrBasePath;
+        }
+
+        $handles = [];
+
+        foreach (glob($basePath.'/schemas/*.json') ?: [] as $file) {
+            $decoded = json_decode((string) file_get_contents($file), true);
+            if (is_array($decoded) && isset($decoded['handle']) && is_string($decoded['handle'])) {
+                $handles[] = $decoded['handle'];
+            }
+        }
+
+        $manifest ??= [];
+        $provides = $manifest['provides'] ?? [];
+        if (is_array($provides) && is_array($provides['contentTypes'] ?? null)) {
+            foreach ($provides['contentTypes'] as $handle) {
+                if (is_string($handle)) {
+                    $handles[] = $handle;
+                }
+            }
+        }
+
+        $uninstall = $manifest['uninstall'] ?? [];
+        if (is_array($uninstall) && is_array($uninstall['contentTypes'] ?? null)) {
+            foreach ($uninstall['contentTypes'] as $handle) {
+                if (is_string($handle)) {
+                    $handles[] = $handle;
+                }
+            }
+        }
+
+        return array_values(array_unique($handles));
+    }
+
+    /**
+     * Create (or update) the magna_entries_* table for every content type that
+     * the plugin declares in its schemas/ directory. Called after enable() loads
+     * those schemas into the SchemaRegistry so SchemaSyncer sees them.
+     */
+    private function syncPluginSchemas(Plugin $plugin): void
+    {
+        if (! is_dir($plugin->getBasePath().'/schemas')) {
+            return;
+        }
+
+        if (! $this->app->bound(SchemaSyncer::class)) {
+            return;
+        }
+
+        /** @var SchemaRegistry $registry */
+        $registry = $this->app->make(SchemaRegistry::class);
+        /** @var SchemaSyncer $syncer */
+        $syncer = $this->app->make(SchemaSyncer::class);
+        $syncer->syncAll($registry, allowDestructive: false);
     }
 
     private function dispatchContracts(): void

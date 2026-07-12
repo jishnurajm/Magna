@@ -1,6 +1,9 @@
 *.log
 .DS_Store
 /docs
+
+# Plugins live in their own repos — never commit them to the CMS repo
+/plugins-dev/
 .env
 .env.backup
 .env.production

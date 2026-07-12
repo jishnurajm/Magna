@@ -1,7 +1,6 @@
 *.log
 .DS_Store
 /docs
-README.md
 .env
 .env.backup
 .env.production

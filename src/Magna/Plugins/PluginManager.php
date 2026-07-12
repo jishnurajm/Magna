@@ -18,6 +18,7 @@ use Magna\Contracts\RegistersAdminNavigation;
 use Magna\MagnaServiceProvider;
 use Magna\Plugins\Exceptions\PluginCompatibilityException;
 use Magna\Plugins\Exceptions\PluginNotFoundException;
+use Throwable;
 
 class PluginManager
 {
@@ -43,17 +44,29 @@ class PluginManager
         $records = PluginRecord::query()->where('enabled', true)->get();
 
         // First pass — register() on every plugin (so container bindings are in place for boot()).
+        // A plugin whose files were deleted after installation must not crash the entire CMS.
+        // Auto-disable any plugin that fails here so the admin panel remains accessible.
         foreach ($records as $record) {
-            $plugin = $this->instantiate($record->manifest, $record->base_path);
-            $plugin->register();
-            $this->booted[$record->name] = $plugin;
+            try {
+                $plugin = $this->instantiate($record->manifest, $record->base_path);
+                $plugin->register();
+                $this->booted[$record->name] = $plugin;
+            } catch (Throwable $e) {
+                $record->update(['enabled' => false, 'disabled_at' => now()]);
+                logger()->error("Plugin [{$record->name}] auto-disabled: class or files missing. {$e->getMessage()}");
+            }
         }
 
         // Second pass — boot() once all plugins have had a chance to register.
-        foreach ($this->booted as $plugin) {
-            $plugin->boot();
-            $this->loadRoutes($plugin);
-            $this->registerPermissions($plugin->getManifest());
+        foreach ($this->booted as $name => $plugin) {
+            try {
+                $plugin->boot();
+                $this->loadRoutes($plugin);
+                $this->registerPermissions($plugin->getManifest());
+            } catch (Throwable $e) {
+                unset($this->booted[$name]);
+                logger()->error("Plugin [{$name}] auto-disabled during boot: {$e->getMessage()}");
+            }
         }
 
         // Dispatch typed contracts.
@@ -185,11 +198,20 @@ class PluginManager
 
     /**
      * @param  array<string, mixed>  $manifest
+     *
+     * @throws PluginNotFoundException if the entry class cannot be autoloaded
      */
     private function instantiate(array $manifest, string $basePath): Plugin
     {
         $manifestObj = Manifest::fromArray($manifest);
         $class = $manifestObj->entryClass;
+
+        if (! class_exists($class)) {
+            throw new \RuntimeException(
+                "Plugin entry class [{$class}] does not exist. "
+                .'The plugin files may have been deleted without uninstalling via the admin panel.'
+            );
+        }
 
         /** @var Plugin */
         return $this->app->make($class, [
@@ -395,8 +417,14 @@ class PluginManager
 
     private function dispatchContracts(): void
     {
-        foreach ($this->booted as $plugin) {
-            $this->dispatchContractsFor($plugin);
+        foreach ($this->booted as $name => $plugin) {
+            try {
+                $this->dispatchContractsFor($plugin);
+            } catch (Throwable $e) {
+                // A plugin whose nav/schema registration threw must not block the panel.
+                unset($this->booted[$name]);
+                logger()->error("Plugin [{$name}] removed after contract dispatch failed: {$e->getMessage()}");
+            }
         }
     }
 

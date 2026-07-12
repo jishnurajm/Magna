@@ -12,6 +12,7 @@ use Magna\Contracts\RegistersAdminNavigation;
 use Magna\Contracts\RegistersDashboardWidgets;
 use Magna\Contracts\RegistersSettingsPages;
 use Magna\Plugins\PluginManager;
+use Throwable;
 
 class AdminServiceProvider extends ServiceProvider
 {
@@ -44,48 +45,54 @@ class AdminServiceProvider extends ServiceProvider
         $widgets = [];
         $settingPages = [];
 
-        foreach ($manager->getEnabled() as $plugin) {
-            // RegistersAdminNavigation → sidebar nav group
-            if ($plugin instanceof RegistersAdminNavigation) {
-                $group = $plugin->adminNavigation();
+        foreach ($manager->getEnabled() as $name => $plugin) {
+            try {
+                // RegistersAdminNavigation → sidebar nav group
+                if ($plugin instanceof RegistersAdminNavigation) {
+                    $group = $plugin->adminNavigation();
 
-                $filamentItems = [];
-                foreach ($group->getItems() as $item) {
-                    $navItem = NavigationItem::make($item->label);
+                    $filamentItems = [];
+                    foreach ($group->getItems() as $item) {
+                        $navItem = NavigationItem::make($item->label);
 
-                    if ($item->resourceClass !== null) {
-                        $navItem->url(
-                            fn (): string => $item->resourceClass::getUrl(),
-                        );
-                    } elseif ($item->route !== null) {
-                        $navItem->url(fn (): string => route($item->route));
+                        if ($item->resourceClass !== null) {
+                            $navItem->url(
+                                fn (): string => $item->resourceClass::getUrl(),
+                            );
+                        } elseif ($item->route !== null) {
+                            $navItem->url(fn (): string => route($item->route));
+                        }
+
+                        $perm = $item->getRequiredPermission();
+                        if ($perm !== null) {
+                            $navItem->isHidden(fn (): bool => ! auth()->user()?->can($perm));
+                        }
+
+                        $filamentItems[] = $navItem;
                     }
 
-                    $perm = $item->getRequiredPermission();
-                    if ($perm !== null) {
-                        $navItem->isHidden(fn (): bool => ! auth()->user()?->can($perm));
+                    $navGroups[] = NavigationGroup::make($group->label)
+                        ->icon($group->icon)
+                        ->items($filamentItems);
+                }
+
+                // RegistersDashboardWidgets → injected into panel widget list
+                if ($plugin instanceof RegistersDashboardWidgets) {
+                    foreach ($plugin->dashboardWidgets() as $widgetClass) {
+                        $widgets[] = $widgetClass;
                     }
-
-                    $filamentItems[] = $navItem;
                 }
 
-                $navGroups[] = NavigationGroup::make($group->label)
-                    ->icon($group->icon)
-                    ->items($filamentItems);
-            }
-
-            // RegistersDashboardWidgets → injected into panel widget list
-            if ($plugin instanceof RegistersDashboardWidgets) {
-                foreach ($plugin->dashboardWidgets() as $widgetClass) {
-                    $widgets[] = $widgetClass;
+                // RegistersSettingsPages → injected into panel page list
+                if ($plugin instanceof RegistersSettingsPages) {
+                    foreach ($plugin->settingsPages() as $pageClass) {
+                        $settingPages[] = $pageClass;
+                    }
                 }
-            }
 
-            // RegistersSettingsPages → injected into panel page list
-            if ($plugin instanceof RegistersSettingsPages) {
-                foreach ($plugin->settingsPages() as $pageClass) {
-                    $settingPages[] = $pageClass;
-                }
+            } catch (Throwable $e) {
+                // A buggy plugin must not prevent the admin panel from rendering.
+                logger()->error("Plugin [{$name}] skipped during panel wiring: {$e->getMessage()}");
             }
         }
 

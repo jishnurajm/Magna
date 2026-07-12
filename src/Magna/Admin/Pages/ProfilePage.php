@@ -15,7 +15,9 @@ use Filament\Pages\Page;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rules\Password;
+use Magna\Media\MediaIngestor;
 use Magna\Users\User;
 
 /**
@@ -119,7 +121,26 @@ class ProfilePage extends Page implements HasForms
         /** @var User $user */
         $user = auth()->user();
 
-        $user->avatar_path = $data['avatar_path'] ?? null;
+        $avatarPath = $data['avatar_path'] ?? null;
+
+        // Ingest a freshly-uploaded avatar into the media library so it appears
+        // in /media. Skip if unchanged or already a managed media/ path.
+        if (is_string($avatarPath) && $avatarPath !== ''
+            && ! str_starts_with($avatarPath, 'media/')
+            && $avatarPath !== $user->avatar_path
+        ) {
+            $absolute = Storage::disk('public')->path($avatarPath);
+            if (is_file($absolute)) {
+                try {
+                    $ingested = app(MediaIngestor::class)->ingest($absolute, basename($avatarPath), 'public');
+                    $avatarPath = $ingested->path;
+                } catch (\Throwable) {
+                    // Keep original path on failure
+                }
+            }
+        }
+
+        $user->avatar_path = $avatarPath;
         $user->name = $data['name'];
 
         if ($data['email'] !== $user->email) {
@@ -135,7 +156,7 @@ class ProfilePage extends Page implements HasForms
 
         // Re-fill with updated data, clearing password fields.
         $this->form->fill([
-            'avatar_path' => $user->avatar_path,
+            'avatar_path' => $avatarPath,
             'name' => $user->name,
             'email' => $user->email,
             'current_password' => '',

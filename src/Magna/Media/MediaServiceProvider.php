@@ -8,7 +8,9 @@ use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\ServiceProvider;
+use Livewire\Livewire;
 use Magna\Media\Console\MediaReconvertCommand;
+use Magna\Media\Livewire\MediaPickerModal;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class MediaServiceProvider extends ServiceProvider
@@ -38,6 +40,12 @@ class MediaServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // Views for the global media picker (magna::livewire.media-picker-modal).
+        $this->loadViewsFrom(__DIR__.'/views', 'magna');
+
+        // Global reusable media picker — available in every Filament page and plugin.
+        Livewire::component('magna-media-picker', MediaPickerModal::class);
+
         // Signed-URL delivery route for non-S3 disks.
         // Stage 8 will add preset resolution and auth middleware.
         Route::get('/_media/{media}', function (Media $media): StreamedResponse {

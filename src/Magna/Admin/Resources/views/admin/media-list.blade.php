@@ -22,13 +22,21 @@
         setView(v) { this.viewMode = v; localStorage.setItem('magna_media_view', v); },
         showFolders: localStorage.getItem('magna_media_folders') === '1',
         toggleFolders() { this.showFolders = ! this.showFolders; localStorage.setItem('magna_media_folders', this.showFolders ? '1' : '0'); },
-        copyUrl(url) {
-            navigator.clipboard.writeText(url).catch(() => {
+        copiedId: null,
+        copyUrl(url, id) {
+            const fallback = () => {
                 const el = document.createElement('textarea');
                 el.value = url; el.style.cssText = 'position:fixed;opacity:0';
                 document.body.appendChild(el); el.focus(); el.select();
                 document.execCommand('copy'); el.remove();
-            });
+            };
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(url).then(() => {}).catch(fallback);
+            } else {
+                fallback();
+            }
+            this.copiedId = id;
+            setTimeout(() => { this.copiedId = null; }, 1500);
         }
     }"
     class="space-y-6"
@@ -184,22 +192,20 @@
                     <div class="mli-overlay absolute inset-0 bg-slate-900/60 backdrop-blur-[2px] flex items-center justify-center gap-2">
                         {{-- Copy URL --}}
                         <button
-                            @click.stop="copyUrl('{{ $url }}')"
+                            @click.stop="copyUrl('{{ $url }}', '{{ $item->id }}')"
                             class="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 flex items-center justify-center text-white transition-all"
                             title="Copy URL"
                         >
-                            <span class="mli-msri text-lg">link</span>
+                            <span class="mli-msri text-lg" x-text="copiedId === '{{ $item->id }}' ? 'check' : 'link'"></span>
                         </button>
-                        {{-- Preview / open --}}
-                        <a
-                            href="{{ $url }}"
-                            target="_blank"
-                            rel="noopener noreferrer"
+                        {{-- In-CMS preview --}}
+                        <button
+                            wire:click="previewGalleryItem('{{ $item->id }}')"
                             class="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 flex items-center justify-center text-white transition-all"
-                            title="Open original"
+                            title="Preview"
                         >
-                            <span class="mli-msri text-lg">open_in_new</span>
-                        </a>
+                            <span class="mli-msri text-lg">visibility</span>
+                        </button>
                         {{-- Edit --}}
                         <a
                             href="{{ \Magna\Admin\Resources\MediaResource::getUrl('edit', ['record' => $item]) }}"
@@ -263,6 +269,87 @@
     </div>
 
 </div>
+
+{{-- In-CMS preview modal --}}
+@if($galleryPreview)
+<div
+    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm"
+    wire:click.self="closeGalleryPreview"
+    role="dialog" aria-modal="true"
+>
+    <div class="relative w-full max-w-3xl bg-white dark:bg-slate-900 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+
+        {{-- Header --}}
+        <div class="flex items-center justify-between gap-4 px-5 py-4 border-b border-slate-200 dark:border-slate-800 flex-shrink-0">
+            <p class="text-sm font-semibold text-slate-700 dark:text-slate-200 truncate">
+                {{ $galleryPreview['filename'] }}
+            </p>
+            <div class="flex items-center gap-2 flex-shrink-0">
+                <a
+                    href="{{ $galleryPreview['url'] }}"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="inline-flex items-center gap-1 text-xs text-slate-400 hover:text-violet-500 transition-colors"
+                    title="Open full size"
+                >
+                    <span class="mli-msri text-base">open_in_new</span>
+                </a>
+                <button
+                    wire:click="closeGalleryPreview"
+                    class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-600 dark:hover:text-slate-200 transition-all"
+                    title="Close"
+                >
+                    <span class="mli-msri text-xl">close</span>
+                </button>
+            </div>
+        </div>
+
+        {{-- Content --}}
+        <div class="flex-1 overflow-auto p-5 flex items-center justify-center bg-slate-50 dark:bg-slate-950/50">
+            @if(str_starts_with($galleryPreview['mime_type'], 'image/'))
+                <img
+                    src="{{ $galleryPreview['url'] }}"
+                    alt="{{ $galleryPreview['alt'] }}"
+                    class="max-w-full max-h-[60vh] rounded-lg object-contain shadow-sm"
+                >
+            @elseif(str_starts_with($galleryPreview['mime_type'], 'video/'))
+                <video
+                    src="{{ $galleryPreview['url'] }}"
+                    controls
+                    class="max-w-full max-h-[60vh] rounded-lg"
+                ></video>
+            @elseif(str_starts_with($galleryPreview['mime_type'], 'audio/'))
+                <audio src="{{ $galleryPreview['url'] }}" controls class="w-full"></audio>
+            @elseif($galleryPreview['mime_type'] === 'application/pdf')
+                <iframe
+                    src="{{ $galleryPreview['url'] }}"
+                    class="w-full rounded-lg border border-slate-200 dark:border-slate-700"
+                    style="height: 60vh;"
+                ></iframe>
+            @else
+                <div class="flex flex-col items-center gap-4 py-8 text-center">
+                    <span class="mli-msri text-5xl text-slate-300">insert_drive_file</span>
+                    <p class="text-sm text-slate-500 dark:text-slate-400">Preview not available for this file type.</p>
+                    <a
+                        href="{{ $galleryPreview['url'] }}"
+                        download
+                        class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-violet-600 text-white text-sm font-medium hover:bg-violet-700 transition-colors"
+                    >
+                        <span class="mli-msri text-base">download</span>
+                        Download file
+                    </a>
+                </div>
+            @endif
+        </div>
+
+        @if($galleryPreview['width'] && $galleryPreview['height'])
+        <div class="px-5 py-3 border-t border-slate-200 dark:border-slate-800 flex-shrink-0">
+            <p class="text-xs text-slate-400 font-mono">{{ $galleryPreview['width'] }} × {{ $galleryPreview['height'] }} px</p>
+        </div>
+        @endif
+    </div>
+</div>
+@endif
 
 <x-filament-actions::modals />
 

@@ -30,6 +30,9 @@ class ListMedia extends ListRecords
     /** Active category filter (images|pdf|video|others) from the stats widget. */
     public ?string $categoryFilter = null;
 
+    /** Holds data for the in-grid preview modal; null = closed. */
+    public ?array $galleryPreview = null;
+
     public function getHeading(): string
     {
         return 'Media Library';
@@ -123,6 +126,28 @@ class ListMedia extends ListRecords
                         ->send();
                 }),
         ];
+    }
+
+    public function previewGalleryItem(string $id): void
+    {
+        $item = Media::withoutTrashed()->find($id);
+        if (! $item) {
+            return;
+        }
+
+        $this->galleryPreview = [
+            'url' => self::mediaUrl($item),
+            'mime_type' => $item->mime_type,
+            'filename' => filled($item->title) ? $item->title : $item->original_filename,
+            'alt' => $item->alt ?? '',
+            'width' => $item->width,
+            'height' => $item->height,
+        ];
+    }
+
+    public function closeGalleryPreview(): void
+    {
+        $this->galleryPreview = null;
     }
 
     public function deleteGalleryItem(string $id): void

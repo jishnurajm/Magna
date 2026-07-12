@@ -39,7 +39,7 @@ class UserResource extends \Filament\Resources\Resource
 
     public static function canCreate(): bool
     {
-        return false;
+        return auth()->user()?->can('users.manage') ?? false;
     }
 
     public static function canDelete(Model $record): bool
@@ -69,7 +69,20 @@ class UserResource extends \Filament\Resources\Resource
                 ->label('Email')
                 ->email()
                 ->required()
-                ->maxLength(255),
+                ->maxLength(255)
+                ->unique(ignoreRecord: true),
+
+            TextInput::make('password')
+                ->label('Password')
+                ->password()
+                ->revealable()
+                ->minLength(12)
+                // Required only when creating; the 'hashed' cast on the model
+                // hashes it. On edit, a blank value is dropped so the current
+                // password is kept.
+                ->required(fn (string $operation): bool => $operation === 'create')
+                ->dehydrated(fn (?string $state): bool => filled($state))
+                ->helperText('Minimum 12 characters. Leave blank to keep the current password when editing.'),
 
             Select::make('status')
                 ->label('Status')
@@ -77,6 +90,7 @@ class UserResource extends \Filament\Resources\Resource
                     UserStatus::Active->value => 'Active',
                     UserStatus::Suspended->value => 'Suspended',
                 ])
+                ->default(UserStatus::Active->value)
                 ->required(),
 
             Select::make('roles')

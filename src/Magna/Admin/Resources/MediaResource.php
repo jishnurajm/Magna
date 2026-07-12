@@ -14,6 +14,8 @@ use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Filter;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -25,12 +27,15 @@ use Magna\Admin\Resources\Media\ListMedia;
 use Magna\Admin\Resources\Media\TrashMedia;
 use Magna\Media\Media;
 use Magna\Media\MediaFolder;
+use Magna\Users\User;
 
 class MediaResource extends \Filament\Resources\Resource
 {
     protected static ?string $model = Media::class;
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-photo';
+
+    protected static ?string $navigationLabel = 'Media library';
 
     protected static string|\UnitEnum|null $navigationGroup = 'Content';
 
@@ -120,6 +125,12 @@ class MediaResource extends \Filament\Resources\Resource
                     ->sortable()
                     ->placeholder('—'),
 
+                TextColumn::make('uploader.name')
+                    ->label('Uploaded by')
+                    ->placeholder('—')
+                    ->sortable()
+                    ->toggleable(),
+
                 TextColumn::make('created_at')
                     ->label('Uploaded')
                     ->dateTime()
@@ -127,6 +138,18 @@ class MediaResource extends \Filament\Resources\Resource
             ])
             ->filters([
                 TrashedFilter::make(),
+
+                SelectFilter::make('uploaded_by')
+                    ->label('Uploaded by')
+                    ->options(fn (): array => User::query()->orderBy('name')->pluck('name', 'id')->all())
+                    ->searchable()
+                    ->preload(),
+
+                Filter::make('uploaded_by_others')
+                    ->label('Uploaded by other users')
+                    ->query(fn (Builder $query): Builder => $query
+                        ->whereNotNull('uploaded_by')
+                        ->where('uploaded_by', '!=', (string) auth()->id())),
             ])
             ->actions([
                 Action::make('preview')

@@ -8,6 +8,8 @@ use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Contracts\Support\Htmlable;
+use Illuminate\Support\HtmlString;
+use Magna\Contracts\RegistersSettingsPages;
 use Magna\Plugins\Exceptions\PluginCompatibilityException;
 use Magna\Plugins\PluginInfo;
 use Magna\Plugins\PluginManager;
@@ -250,9 +252,48 @@ class PluginsPage extends Page
         return Action::make('install')
             ->requiresConfirmation()
             ->modalHeading('Install plugin')
-            ->modalDescription("Runs the plugin's database migrations and enables it immediately.")
+            ->modalDescription(function (): HtmlString {
+                $name = $this->pendingPluginName ?? '';
+
+                // Determine whether the plugin comes from an external source (Composer
+                // package) or is a local dev plugin owned by this site's developer.
+                // TODO: once a Magna official marketplace exists, add a "verified" flag
+                // to magna.json and show a verified badge here instead of the blanket
+                // warning — verified plugins would skip this alert.
+                $source = collect($this->available)
+                    ->first(fn (array $p): bool => $p['name'] === $name)['source'] ?? 'Composer';
+
+                $isThirdParty = $source !== 'plugins-dev/';
+
+                $base = "<p>Runs the plugin's database migrations and enables it immediately.</p>";
+
+                if ($isThirdParty) {
+                    $warning = <<<'HTML'
+                        <div class="mt-3 rounded-lg border border-warning-300 dark:border-warning-700 bg-warning-50 dark:bg-warning-950/30 px-4 py-3 flex gap-3">
+                            <svg class="w-5 h-5 text-warning-500 dark:text-warning-400 shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/>
+                            </svg>
+                            <div class="text-sm text-warning-800 dark:text-warning-200">
+                                <p class="font-semibold mb-1">Third-party plugin</p>
+                                <p>This plugin is not from an official Magna marketplace. Third-party plugins run with <strong>full application access</strong> — they can read your database, files, and environment variables.</p>
+                                <p class="mt-1">Only install from sources you trust.</p>
+                            </div>
+                        </div>
+                    HTML;
+
+                    return new HtmlString($base.$warning);
+                }
+
+                return new HtmlString($base);
+            })
             ->modalSubmitActionLabel('Install & enable')
-            ->color('success')
+            ->color(function (): string {
+                $name = $this->pendingPluginName ?? '';
+                $source = collect($this->available)
+                    ->first(fn (array $p): bool => $p['name'] === $name)['source'] ?? 'Composer';
+
+                return $source !== 'plugins-dev/' ? 'warning' : 'success';
+            })
             ->action(function (): void {
                 try {
                     app(PluginManager::class)->enable($this->pendingPluginName ?? '');
@@ -324,20 +365,37 @@ class PluginsPage extends Page
             ->map(fn (PluginInfo $info): string => $info->manifest->version)
             ->all();
 
-        $this->installed = $records->map(fn (PluginRecord $r): array => [
-            'name' => $r->name,
-            'display_name' => $r->display_name,
-            'version' => $r->version,
-            'enabled' => $r->enabled,
-            'description' => is_array($r->manifest) ? (string) ($r->manifest['description'] ?? '') : '',
-            'author' => is_array($r->manifest) ? (string) ($r->manifest['author'] ?? '') : '',
-            'source' => str_contains(str_replace('\\', '/', (string) $r->base_path), '/plugins-dev/')
-                ? 'plugins-dev/'
-                : 'Composer',
-            'update_version' => isset($discoveredVersions[$r->name]) && $discoveredVersions[$r->name] !== $r->version
-                ? $discoveredVersions[$r->name]
-                : null,
-        ])->values()->all();
+        $bootedPlugins = app(PluginManager::class)->getEnabled();
+
+        $this->installed = $records->map(function (PluginRecord $r) use ($discoveredVersions, $bootedPlugins): array {
+            $settingsUrl = null;
+            $booted = $bootedPlugins[$r->name] ?? null;
+            if ($booted instanceof RegistersSettingsPages) {
+                $pages = $booted->settingsPages();
+                if ($pages !== []) {
+                    try {
+                        $settingsUrl = $pages[0]::getUrl();
+                    } catch (Throwable) {
+                    }
+                }
+            }
+
+            return [
+                'name' => $r->name,
+                'display_name' => $r->display_name,
+                'version' => $r->version,
+                'enabled' => $r->enabled,
+                'description' => is_array($r->manifest) ? (string) ($r->manifest['description'] ?? '') : '',
+                'author' => is_array($r->manifest) ? (string) ($r->manifest['author'] ?? '') : '',
+                'source' => str_contains(str_replace('\\', '/', (string) $r->base_path), '/plugins-dev/')
+                    ? 'plugins-dev/'
+                    : 'Composer',
+                'update_version' => isset($discoveredVersions[$r->name]) && $discoveredVersions[$r->name] !== $r->version
+                    ? $discoveredVersions[$r->name]
+                    : null,
+                'settings_url' => $settingsUrl,
+            ];
+        })->values()->all();
 
         $this->available = collect(app(PluginManager::class)->discover())
             ->reject(fn (PluginInfo $info): bool => in_array($info->manifest->name, $installedNames, true))

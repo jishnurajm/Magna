@@ -261,5 +261,5 @@ it('super admin has full UserResource access without explicit grants', function 
 
     expect(UserResource::canViewAny())->toBeTrue()
         ->and(UserResource::canEdit($target))->toBeTrue()
-        ->and(UserResource::canCreate())->toBeFalse(); // Create is always disabled for users
+        ->and(UserResource::canCreate())->toBeTrue(); // Users with users.manage may create accounts
 });

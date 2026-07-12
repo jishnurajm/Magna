@@ -16,3 +16,9 @@ parameters:
     # excluded by path rather than via ignoreErrors. Everything else stays at level 9.
     excludePaths:
         - src/Magna/Admin
+        # Reusable trait offered to plugin authors (documented in
+        # plugin-development-guide.md). Its only consumers are Filament pages
+        # (excluded above) and installed plugins (outside PHPStan's paths), so it
+        # structurally reads as "unused" here even though it is part of the public
+        # extension API — the same modelling limitation as the Filament exclusion.
+        - src/Magna/Media/Concerns/IngestsMedia.php

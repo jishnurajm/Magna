@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "6dd688dc4cf0730e76efe3eb345b0254",
+    "content-hash": "039289414bc6601dbaa216c4b193f882",
     "packages": [
         {
             "name": "anourvalar/eloquent-serialize",
@@ -3718,6 +3718,29 @@
                 }
             ],
             "time": "2026-06-27T03:16:11+00:00"
+        },
+        {
+            "name": "magna/docs",
+            "version": "dev-main",
+            "dist": {
+                "type": "path",
+                "url": "plugins-dev/magna/docs",
+                "reference": "91e92c149ddfbe8c192f8bd0a0bded7ccc6aef1b"
+            },
+            "require": {
+                "league/commonmark": "^2.4",
+                "php": "^8.3"
+            },
+            "type": "magna-plugin",
+            "autoload": {
+                "psr-4": {
+                    "Magna\\Docs\\": "src/"
+                }
+            },
+            "description": "Documentation page management plugin for Magna CMS.",
+            "transport-options": {
+                "relative": true
+            }
         },
         {
             "name": "monolog/monolog",
@@ -12245,6 +12268,7 @@
     "aliases": [],
     "minimum-stability": "dev",
     "stability-flags": {
+        "magna/docs": 20,
         "magna/hello-world": 20
     },
     "prefer-stable": true,

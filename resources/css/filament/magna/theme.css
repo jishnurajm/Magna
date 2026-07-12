@@ -67,6 +67,16 @@
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
+/* A stats-overview widget renders each stat as its own glass card, so the widget
+   wrapper must NOT paint a second panel around them — that produced a nested
+   (box-inside-a-box) look on the dashboard cards. */
+.dark .fi-wi-widget:has(.fi-wi-stats-overview-stat) {
+    background: none;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════
    SIDEBAR NAV ITEM HOVER / ACTIVE
    Safe to override: only color and background, no layout properties.

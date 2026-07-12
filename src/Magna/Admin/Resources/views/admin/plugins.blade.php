@@ -178,6 +178,10 @@
 
                                     {{-- Inline WP-style row actions --}}
                                     <div class="flex items-center text-xs text-gray-500 dark:text-gray-400 mt-2">
+                                        @if ($p['settings_url'])
+                                            <a href="{{ $p['settings_url'] }}" wire:navigate class="hover:text-primary-600 dark:hover:text-primary-400 transition-colors font-medium">Settings</a>
+                                            <span class="px-1.5 text-gray-300 dark:text-gray-600 select-none">|</span>
+                                        @endif
                                         @if ($p['enabled'])
                                             <button wire:click="disable('{{ $p['name'] }}')" class="hover:text-gray-900 dark:hover:text-white transition-colors">Disable</button>
                                             <span class="px-1.5 text-gray-300 dark:text-gray-600 select-none">|</span>
@@ -225,13 +229,20 @@
 
                         {{-- Action buttons --}}
                         <td class="py-4 px-2 pr-4 text-right whitespace-nowrap align-top pt-5">
-                            @if ($p['enabled'])
-                                <button
-                                    wire:click="disable('{{ $p['name'] }}')"
-                                    class="text-xs font-medium px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
-                                >Disable</button>
-                            @else
-                                <span class="inline-flex gap-1.5">
+                            <span class="inline-flex gap-1.5 flex-wrap justify-end">
+                                @if ($p['settings_url'])
+                                    <a
+                                        href="{{ $p['settings_url'] }}"
+                                        wire:navigate
+                                        class="text-xs font-medium px-3 py-1.5 rounded-lg border border-primary-300 dark:border-primary-700 text-primary-700 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors"
+                                    >Settings</a>
+                                @endif
+                                @if ($p['enabled'])
+                                    <button
+                                        wire:click="disable('{{ $p['name'] }}')"
+                                        class="text-xs font-medium px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
+                                    >Disable</button>
+                                @else
                                     <button
                                         wire:click="enable('{{ $p['name'] }}')"
                                         class="text-xs font-medium px-3 py-1.5 rounded-lg bg-green-600 text-white hover:bg-green-700 transition-colors"
@@ -240,8 +251,8 @@
                                         wire:click="requestUninstall('{{ $p['name'] }}')"
                                         class="text-xs font-medium px-3 py-1.5 rounded-lg border border-red-200 dark:border-red-800/50 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                                     >Uninstall</button>
-                                </span>
-                            @endif
+                                @endif
+                            </span>
                         </td>
                     </tr>
                 @empty
@@ -264,10 +275,15 @@
      ═══════════════════════════════════════════════════════════════════════════ --}}
 @else
 
-    {{-- Info banner --}}
-    <div class="bg-primary-50 dark:bg-primary-900/20 border border-primary-100 dark:border-primary-700/30 text-primary-800 dark:text-primary-300 text-sm rounded-xl px-4 py-3 mb-6">
-        Plugins found in Composer packages or <code class="bg-white/70 dark:bg-white/10 px-1 py-0.5 rounded font-mono text-xs text-primary-700 dark:text-primary-400">plugins-dev/</code>
-        that are not yet installed. Installing runs migrations and enables the plugin immediately.
+    {{-- Third-party warning banner --}}
+    <div class="rounded-xl border border-warning-300 dark:border-warning-700 bg-warning-50 dark:bg-warning-950/30 px-4 py-3 mb-6 flex gap-3">
+        <svg class="w-5 h-5 text-warning-500 dark:text-warning-400 shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/>
+        </svg>
+        <div class="text-sm text-warning-800 dark:text-warning-200">
+            <p class="font-semibold mb-0.5">Only install plugins you trust</p>
+            <p class="text-warning-700 dark:text-warning-300">Plugins run with <strong>full application access</strong> — they can read your database, environment variables, and files. Composer-sourced plugins are third-party and have not been reviewed by the Magna team.</p>
+        </div>
     </div>
 
     {{-- Search --}}
@@ -290,32 +306,44 @@
                     $initials = strtoupper(mb_substr($words[0] ?? '', 0, 1))
                         . (isset($words[1]) ? strtoupper(mb_substr($words[1], 0, 1)) : '');
                 @endphp
-                <div class="bg-white dark:bg-gray-900/60 rounded-xl border border-gray-200 dark:border-white/10 p-4 flex flex-col">
+                @php $isThirdParty = $p['source'] !== 'plugins-dev/'; @endphp
+                <div class="bg-white dark:bg-gray-900/60 rounded-xl border {{ $isThirdParty ? 'border-warning-200 dark:border-warning-800/50' : 'border-gray-200 dark:border-white/10' }} p-4 flex flex-col">
                     <div class="flex gap-3 mb-3">
-                        <div class="w-11 h-11 rounded-lg bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 flex items-center justify-center font-bold text-sm shrink-0 select-none">
+                        <div class="w-11 h-11 rounded-lg {{ $isThirdParty ? 'bg-warning-50 dark:bg-warning-900/30 text-warning-700 dark:text-warning-400' : 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400' }} flex items-center justify-center font-bold text-sm shrink-0 select-none">
                             {{ $initials }}
                         </div>
-                        <div class="min-w-0">
-                            <div class="font-semibold text-gray-900 dark:text-white leading-tight">{{ $p['display_name'] }}</div>
+                        <div class="min-w-0 flex-1">
+                            <div class="flex items-center gap-2 leading-tight">
+                                <span class="font-semibold text-gray-900 dark:text-white">{{ $p['display_name'] }}</span>
+                                @if ($isThirdParty)
+                                    <span class="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded bg-warning-100 dark:bg-warning-900/40 text-warning-700 dark:text-warning-400 border border-warning-200 dark:border-warning-700/50 shrink-0">
+                                        <svg class="w-3 h-3" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/></svg>
+                                        Third party
+                                    </span>
+                                @endif
+                            </div>
                             <div class="text-xs text-gray-400 dark:text-gray-500 mt-1">By {{ $p['author'] }}</div>
                         </div>
                     </div>
                     @if ($p['description'])
                         <p class="text-[13px] text-gray-500 dark:text-gray-400 flex-1 leading-relaxed">{{ $p['description'] }}</p>
                     @endif
-                    <div class="flex items-center justify-between mt-4 pt-3 border-t border-gray-100 dark:border-white/5">
+                    <div class="flex items-center justify-between mt-4 pt-3 border-t {{ $isThirdParty ? 'border-warning-100 dark:border-warning-900/30' : 'border-gray-100 dark:border-white/5' }}">
                         <div class="flex items-center gap-2 text-xs text-gray-400 dark:text-gray-500">
                             <span>v{{ $p['version'] }}</span>
-                            <span class="px-2 py-0.5 rounded-full
-                                {{ $p['source'] === 'Composer'
-                                    ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400'
-                                    : 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400' }}">
+                            <span class="px-2 py-0.5 rounded-full font-mono
+                                {{ $isThirdParty
+                                    ? 'bg-warning-50 dark:bg-warning-900/20 text-warning-700 dark:text-warning-400'
+                                    : 'bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-400' }}">
                                 {{ $p['source'] }}
                             </span>
                         </div>
                         <button
                             wire:click="requestInstall('{{ $p['name'] }}')"
-                            class="text-xs font-semibold px-3 py-1.5 rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition-colors"
+                            class="text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors
+                                {{ $isThirdParty
+                                    ? 'bg-warning-500 text-white hover:bg-warning-600'
+                                    : 'bg-primary-600 text-white hover:bg-primary-700' }}"
                         >Install &amp; enable</button>
                     </div>
                 </div>

@@ -66,18 +66,8 @@ class GeneralSettingsPage extends Page implements HasForms
         return $schema
             ->statePath('data')
             ->components([
-                Section::make('Site identity')
+                Section::make('Access')
                     ->schema([
-                        TextInput::make('site_name')
-                            ->label('Site name')
-                            ->required()
-                            ->maxLength(255),
-
-                        TextInput::make('site_tagline')
-                            ->label('Tagline')
-                            ->maxLength(255)
-                            ->placeholder('A short description of your site'),
-
                         Toggle::make('registration_enabled')
                             ->label('Allow public registration')
                             ->helperText('When disabled, only admins can create new user accounts.')
@@ -141,8 +131,6 @@ class GeneralSettingsPage extends Page implements HasForms
     public function save(): void
     {
         /** @var array{
-         *   site_name: string,
-         *   site_tagline: string,
          *   timezone: string,
          *   default_locale: string,
          *   registration_enabled: bool,
@@ -155,9 +143,6 @@ class GeneralSettingsPage extends Page implements HasForms
         $data = $this->form->getState();
 
         $settings = GeneralSettings::get();
-        $settings->site_name = $data['site_name'];
-        // Optional input → null when cleared; property is a non-nullable string.
-        $settings->site_tagline = (string) ($data['site_tagline'] ?? '');
         $settings->timezone = $data['timezone'];
         $settings->default_locale = $data['default_locale'];
         $settings->registration_enabled = $data['registration_enabled'];

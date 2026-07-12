@@ -12,10 +12,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
+use Magna\Users\User;
 
 /**
  * @property string $id
  * @property string|null $folder_id
+ * @property string|null $uploaded_by
  * @property string $disk
  * @property string $path
  * @property string $filename
@@ -42,7 +44,7 @@ class Media extends Model
     protected $table = 'magna_media';
 
     protected $fillable = [
-        'folder_id', 'disk', 'path', 'filename', 'original_filename',
+        'folder_id', 'uploaded_by', 'disk', 'path', 'filename', 'original_filename',
         'mime_type', 'size', 'width', 'height', 'alt', 'title', 'metadata',
     ];
 
@@ -61,6 +63,12 @@ class Media extends Model
     public function folder(): BelongsTo
     {
         return $this->belongsTo(MediaFolder::class, 'folder_id');
+    }
+
+    /** @return BelongsTo<User, $this> */
+    public function uploader(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'uploaded_by');
     }
 
     /** @return HasMany<MediaConversion, $this> */

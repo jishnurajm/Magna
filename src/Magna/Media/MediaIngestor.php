@@ -138,6 +138,7 @@ class MediaIngestor
         $media = new Media;
         $media->id = $mediaId;
         $media->folder_id = $folderId;
+        $media->uploaded_by = auth()->id() !== null ? (string) auth()->id() : null;
         $media->disk = $disk;
         $media->path = $storagePath;
         $media->filename = basename($storagePath);

@@ -74,6 +74,12 @@
       <p align="center"><sub>Append-only audit log</sub></p>
     </td>
   </tr>
+  <tr>
+    <td colspan="3">
+      <img src="screenshots/11-system-info.png" alt="System Insights — live runtime dashboard showing PHP, Laravel, DB, cache, plugins">
+      <p align="center"><sub>System Insights — live runtime dashboard (PHP version, Laravel LTS, DB driver, cache status, active plugins)</sub></p>
+    </td>
+  </tr>
 </table>
 
 ---
@@ -203,6 +209,23 @@ A comprehensive settings panel organized into sections: General, Localization, C
 <img src="screenshots/10-audit-log.png" alt="Audit Log">
 
 Every admin action — create, update, delete, permission change, login, API key generation — is written to an append-only log. Designed for compliance: rows can never be updated or deleted, only queried and exported. Supports SIEM export via webhook.
+
+### System Insights
+
+<img src="screenshots/11-system-info.png" alt="System Insights">
+
+A live runtime dashboard showing everything about your installation at a glance:
+
+- **Engine PHP** — exact PHP version with production-readiness status
+- **Database Driver** — active driver (MySQL, PostgreSQL, SQLite) and client engine version
+- **Environment Target** — `local` / `staging` / `production` with debug mode status
+- **Cache Service** — active cache backend (Redis, database, file) and connection status
+- **Framework Runtime Versions** — Magna CMS edition, Laravel version (LTS tagged), PHP CLI version
+- **Database & Services Node Configuration** — DB driver, version, connection details
+- **Active Plugin Modules** — installed / enabled / disabled plugin counts at a glance
+- **Environment Flag & Debug** — toggle `APP_DEBUG` from the UI without editing `.env`; session lifetime and domain host visible inline
+
+One page that tells you exactly what's running, what's healthy, and what needs attention — no SSH required.
 
 ---
 

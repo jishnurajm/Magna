@@ -119,11 +119,9 @@ Every major open-source headless CMS today runs on Node. Magna brings a modern h
 
 Headless purity has a famous cost: install it and you see an API. Magna's answer is **Magna Pages**, an optional official plugin that turns the *same install* into a rendered website — block editor, themes, live preview — with zero second deployment. Pages renders the exact JSON the API serves, so any Pages site can go fully headless later without migration. Don't want it? Don't install it; the core stays purely headless.
 
-### ⚡ 3. A Performance Contract, Not Performance Adjectives
 
-Magna publishes **CI-enforced latency budgets** — delivery API < 10 ms p99 cached / < 50 ms uncached against a 100k-entry dataset — with the benchmark harness *in this repo* so anyone can reproduce the numbers. Nightly CI fails on a > 10 % regression. **Tag-based cache invalidation** is a core primitive: every response carries surrogate keys, so publishing one entry purges exactly the affected responses in Redis *and* at the edge (Cloudflare, Fastly, Varnish drivers built in). No "clear all cache" as a way of life.
 
-### 🔐 4. Security as a Process with Proof
+### 🔐 3. Security as a Process with Proof
 
 Target: **OWASP ASVS Level 2**, verified by a third-party audit before 1.0, results published. Security is on by default — not documented as "recommended hardening":
 
@@ -140,19 +138,19 @@ Target: **OWASP ASVS Level 2**, verified by a third-party audit before 1.0, resu
 
 And a genuine first: **field-level encryption as a schema attribute** — mark any content field `"encrypted": true` and it encrypts at rest. No other mainstream open-source CMS offers that as a first-class primitive.
 
-### 📐 5. Schema as Code
+### 📐 4. Schema as Code
 
 Content types are versionable files. Build your model in the visual type builder, export it, commit it, and `magna:schema:sync` replays it on staging and production — with a diff preview and destructive-change guards. Content modeling finally works like migrations: reviewable, repeatable, in git. Under the hood: **no EAV** — each content type gets a real table with real columns and real indexes.
 
-### 🧩 6. Plugins Without the Malware Economy
+### 🧩 5. Plugins Without the Malware Economy
 
 Plugins are **Composer packages** — versioning, dependency resolution, and distribution come from infrastructure the PHP world already trusts, not uploaded ZIP files (the WordPress model that made theme/plugin malware an industry). Every plugin declares its capabilities in a manifest shown at install time, like phone app permissions. Extension points are **typed PHP interfaces, semver-guaranteed from 1.0**.
 
-### 🛡️ 7. Fault-Tolerant Plugin Runtime
+### 🛡️ 6. Fault-Tolerant Plugin Runtime
 
 Every plugin hook runs through a guarded dispatcher: a crashing plugin costs its own widget, not your page. A **circuit breaker** auto-disables repeat offenders. A shutdown handler attributes even fatal errors to the responsible plugin. Heavy hooks run on queue workers. `MAGNA_SAFE_MODE=1` boots with all plugins off as a rescue hatch.
 
-### ✍️ 8. Block Editor That Respects Your Time
+### ✍️ 7. Block Editor That Respects Your Time
 
 Content is composed from **portable JSON blocks** — rendered as Blade views by Pages, or as your own React/Vue components headlessly. Structured block list with live preview via signed draft URLs. Draft preview for Next.js/Nuxt is first-class. We deliberately did not clone Gutenberg — a great structured editor is 80 % of the value at 5 % of the cost.
 

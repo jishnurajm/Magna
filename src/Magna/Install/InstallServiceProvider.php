@@ -14,6 +14,21 @@ class InstallServiceProvider extends ServiceProvider
         $this->app->bind(EnvWriter::class, function (): EnvWriter {
             return new EnvWriter(config()->string('magna.install.env_path', base_path('.env')));
         });
+
+        // Must run in register(), before any other provider's boot(): plugin
+        // discovery calls Schema::hasTable() and the exception handler reads the
+        // cache during boot. On a fresh unzip (no .env) both would hit the
+        // default `database` cache store / missing SQLite file and 500 before
+        // the installer can render. Overriding config here makes the whole
+        // pre-install runtime self-contained.
+        if (! Installer::isInstalled() && ! $this->app->runningInConsole()) {
+            config([
+                'session.driver' => 'file',
+                'cache.default' => 'array',
+                'database.default' => 'sqlite',
+                'database.connections.sqlite.database' => ':memory:',
+            ]);
+        }
     }
 
     /**
@@ -32,14 +47,13 @@ class InstallServiceProvider extends ServiceProvider
     }
 
     /**
-     * Until installation completes there is no configured database and
-     * possibly no APP_KEY (fresh unzip). Force file-based sessions and
-     * self-generate a key so the installer can run on a bare server.
+     * On a fresh unzip there is often no APP_KEY. Self-generate one (and try to
+     * persist it to .env) so sessions/CSRF work through the installer. The
+     * pre-install cache/database/session overrides are applied earlier, in
+     * register(), because they must land before any other provider boots.
      */
     private function prepareUninstalledRuntime(): void
     {
-        config(['session.driver' => 'file']);
-
         if (config('app.key') !== null && config('app.key') !== '') {
             return;
         }

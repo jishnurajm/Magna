@@ -62,19 +62,27 @@ return Application::configure(basePath: dirname(__DIR__))
                 return;
             }
 
-            // Rate-limited per distinct exception (class + message), not
-            // per occurrence — a tight crash loop must not flood the bell
-            // with hundreds of identical rows.
-            $key = 'magna.admin.exception-notified.'.md5($e::class.'|'.$e->getMessage());
-            if (Cache::has($key)) {
-                return;
-            }
-            Cache::put($key, true, now()->addHour());
+            // The bell itself must never mask the real failure. If the cache or
+            // database backing this is unavailable (e.g. a misconfigured or
+            // not-yet-installed site), swallow it so the operator sees the
+            // original exception, not a secondary one from the reporter.
+            try {
+                // Rate-limited per distinct exception (class + message), not
+                // per occurrence — a tight crash loop must not flood the bell
+                // with hundreds of identical rows.
+                $key = 'magna.admin.exception-notified.'.md5($e::class.'|'.$e->getMessage());
+                if (Cache::has($key)) {
+                    return;
+                }
+                Cache::put($key, true, now()->addHour());
 
-            NotificationRecipients::notifyDashboard(
-                'Unexpected error',
-                $e->getMessage() !== '' ? $e->getMessage() : $e::class,
-                'danger',
-            );
+                NotificationRecipients::notifyDashboard(
+                    'Unexpected error',
+                    $e->getMessage() !== '' ? $e->getMessage() : $e::class,
+                    'danger',
+                );
+            } catch (Throwable) {
+                // Reporting is best-effort; never let it escalate.
+            }
         });
     })->create();

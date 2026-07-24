@@ -322,14 +322,23 @@ $files = new RecursiveIteratorIterator(
     new RecursiveDirectoryIterator($stage, FilesystemIterator::SKIP_DOTS),
     RecursiveIteratorIterator::SELF_FIRST
 );
+// Unix permission bits stored in the archive. PHP's ZipArchive writes 0 by
+// default; some hosts then extract every file as 0000 (unreadable) and the app
+// dies with "Permission denied" reading vendor/. Stamp sane POSIX modes so an
+// extract is immediately servable: 0755 dirs, 0644 files.
+$fileMode = (0100000 | 0644) << 16; // regular file, rw-r--r--
+$dirMode = (0040000 | 0755) << 16; // directory, rwxr-xr-x
+
 $count = 0;
 foreach ($files as $file) {
     /** @var SplFileInfo $file */
     $local = ltrim(str_replace('\\', '/', substr($file->getPathname(), strlen($stage))), '/');
     if ($file->isDir()) {
         $zip->addEmptyDir($local);
+        $zip->setExternalAttributesName($local.'/', ZipArchive::OPSYS_UNIX, $dirMode);
     } else {
         $zip->addFile($file->getPathname(), $local);
+        $zip->setExternalAttributesName($local, ZipArchive::OPSYS_UNIX, $fileMode);
         $count++;
     }
 }

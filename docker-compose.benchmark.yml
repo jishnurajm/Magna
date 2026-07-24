@@ -1,0 +1,67 @@
+---
+# Reference benchmark environment (4 vCPU / 8 GB).
+# Used by the nightly CI workflow and for local benchmark runs.
+#
+# Start:
+#   docker compose -f docker-compose.benchmark.yml up -d
+#   docker compose -f docker-compose.benchmark.yml exec app php artisan migrate --force
+#   docker compose -f docker-compose.benchmark.yml exec app php artisan magna:bench:seed --fresh
+#   k6 run benchmarks/scenarios.js --env BASE_URL=http://localhost:8000
+
+version: '3.9'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.benchmark
+    ports:
+      - '8000:8000'
+    environment:
+      APP_ENV: production
+      APP_KEY: ${APP_KEY}
+      APP_URL: http://localhost:8000
+      DB_CONNECTION: pgsql
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_DATABASE: magna_bench
+      DB_USERNAME: magna
+      DB_PASSWORD: secret
+      CACHE_STORE: redis
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      OCTANE_SERVER: frankenphp
+      OCTANE_WORKERS: 4
+      OCTANE_MAX_REQUESTS: 1000
+      MAGNA_INSTALLED: 'true'
+      MAGNA_EDGE_CACHE_DRIVER: 'null'
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: magna_bench
+      POSTGRES_USER: magna
+      POSTGRES_PASSWORD: secret
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD', 'pg_isready', '-U', 'magna']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata:

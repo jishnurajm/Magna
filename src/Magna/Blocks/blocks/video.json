@@ -1,0 +1,33 @@
+{
+    "handle": "video",
+    "label": "Video",
+    "icon": "heroicon-o-play-circle",
+    "category": "media",
+    "fields": [
+        {
+            "handle": "url",
+            "type": "url",
+            "label": "Video URL (YouTube/Vimeo)",
+            "required": false
+        },
+        {
+            "handle": "media_id",
+            "type": "media",
+            "label": "Or: upload video file",
+            "required": false
+        },
+        {
+            "handle": "poster_id",
+            "type": "media",
+            "label": "Poster / thumbnail image",
+            "required": false
+        },
+        {
+            "handle": "autoplay",
+            "type": "boolean",
+            "label": "Autoplay (muted)",
+            "required": false,
+            "default": false
+        }
+    ]
+}

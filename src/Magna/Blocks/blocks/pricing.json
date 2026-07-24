@@ -1,0 +1,14 @@
+{
+    "handle": "pricing",
+    "label": "Pricing",
+    "icon": "heroicon-o-banknotes",
+    "category": "marketing",
+    "fields": [
+        {
+            "handle": "tiers",
+            "type": "json",
+            "label": "Pricing tiers (JSON array: [{name, price, period, features[], cta_label, cta_url, highlighted}])",
+            "required": false
+        }
+    ]
+}

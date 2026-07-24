@@ -1,0 +1,323 @@
+@import '../../../../vendor/filament/filament/resources/css/theme.css';
+
+@source '../../../../app/Filament/**/*';
+@source '../../../../src/Magna/**/*.blade.php';
+
+/* ── Self-hosted Inter ────────────────────────────────────────────────────── */
+@font-face {
+    font-family: 'Inter';
+    font-style: normal;
+    font-weight: 100 900;
+    font-display: swap;
+    src: url('/fonts/inter/inter-var.woff2') format('woff2');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+        U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+2074, U+20AC, U+2122,
+        U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* ── Self-hosted JetBrains Mono ───────────────────────────────────────────── */
+@font-face {
+    font-family: 'JetBrains Mono';
+    font-style: normal;
+    font-weight: 400 700;
+    font-display: swap;
+    src: url('/fonts/jetbrains-mono/JetBrainsMono-Regular.woff2') format('woff2');
+}
+
+@theme {
+    --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, 'Cascadia Code', Consolas, monospace;
+    --radius-xl: 0.75rem;
+    --radius-2xl: 1rem;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SHELL SURFACES
+   Only background-color overrides — these cannot affect Alpine.js behavior.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.dark .fi-body {
+    background-color: #0b0f19;
+}
+
+.dark .fi-topbar {
+    background-color: #0d1220;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.dark .fi-sidebar,
+.dark .fi-main-sidebar {
+    background-color: #0d1220;
+    border-right: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   GLASS PANELS
+   Applies only to structural containers, not to interactive components.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.dark .fi-section,
+.dark .fi-wi-stats-overview-stat,
+.dark .fi-wi-widget,
+.dark .fi-ta-ctn,
+.magna-glass {
+    background: linear-gradient(160deg, rgba(20, 27, 45, 0.75) 0%, rgba(13, 18, 30, 0.85) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 1rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+/* A stats-overview widget renders each stat as its own glass card, so the widget
+   wrapper must NOT paint a second panel around them — that produced a nested
+   (box-inside-a-box) look on the dashboard cards. */
+.dark .fi-wi-widget:has(.fi-wi-stats-overview-stat) {
+    background: none;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SIDEBAR NAV ITEM HOVER / ACTIVE
+   Safe to override: only color and background, no layout properties.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.dark .fi-sidebar-item-btn:hover {
+    background-color: rgba(124, 58, 237, 0.12);
+    color: #c4b5fd;
+}
+
+.dark .fi-sidebar-item.fi-active .fi-sidebar-item-btn {
+    background-color: rgba(124, 58, 237, 0.18);
+    color: #a78bfa;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LOGIN PAGE (simple layout)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.dark .fi-simple-layout {
+    background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(124, 58, 237, 0.1) 0%, transparent 70%),
+        #0b0f19;
+}
+
+/* One card only. Filament already renders the auth card (.fi-simple-main);
+   we just refine its finish. Previously a second card was painted on
+   .fi-simple-page, stacking a duplicate box behind the form. */
+.dark .fi-simple-main {
+    border-radius: 1.25rem;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(124, 58, 237, 0.08);
+}
+
+/* Brand mark on the login page: the animated logo icon and the "Magna"
+   wordmark sit inline (side by side), centered above the form. */
+.fi-simple-main .magna-brand {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 0.625rem;
+    height: auto;
+}
+
+.fi-simple-main .magna-brand-icon {
+    width: 2.5rem;
+    height: 2.5rem;
+}
+
+.fi-simple-main .magna-brand-text {
+    font-size: 1.625rem;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+}
+
+/* "Sign in" heading: small and quiet, sitting just above the email field
+   rather than as a large title competing with the brand. */
+.fi-simple-header {
+    gap: 0.625rem;
+}
+
+.fi-simple-header-heading {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--gray-300, #cbd5e1);
+}
+
+/* Respect reduced-motion: hold the animated brand spark still. */
+@media (prefers-reduced-motion: reduce) {
+    .mgb-line {
+        animation: none !important;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   TOPBAR LOGO COLUMN
+   On desktop: remove topbar's built-in left padding so fi-topbar-start begins
+   flush with the viewport left edge, exactly where the sidebar starts below it.
+   fi-topbar-start gets the same width as the sidebar and a right separator.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@media (min-width: 1024px) {
+    .dark .fi-topbar {
+        padding-inline-start: 0;
+    }
+
+    .fi-topbar-start {
+        flex-shrink: 0;
+        width: var(--sidebar-width);
+        margin-inline-end: 0;
+        padding-inline: calc(var(--spacing) * 4);
+        align-self: stretch;
+        border-inline-end: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .fi-topbar-start .fi-logo {
+        margin-inline-start: calc(var(--spacing) * 2);
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+    }
+}
+
+/* Below 1024px there's no sidebar column for the logo to align with, and the
+   topbar is already tight (hamburger + logo + search/notifications/avatar
+   all in one row) — the full icon+wordmark doesn't fit and overlaps/clips.
+   Hide it here; the same logo already appears at the top of the mobile
+   sidebar drawer (fi-sidebar-header-logo-ctn) once opened, so branding isn't
+   lost, it just moves to where there's room for it. */
+@media (max-width: 1023.98px) {
+    .fi-topbar-start .fi-logo {
+        display: none;
+    }
+}
+
+/* Scroll-spy active state for the Settings sub-nav sidebar items. Applied by
+   the BODY_END render-hook script as the user scrolls through settings
+   sections. Uses the primary (violet) accent to match Filament's own active
+   items. !important overrides Filament's default link styling. */
+a.magna-nav-active {
+    background-color: rgba(124, 58, 237, 0.12) !important;
+    color: #c4b5fd !important;
+    font-weight: 600 !important;
+}
+
+a.magna-nav-active :is(svg, .fi-icon) {
+    color: #a78bfa !important;
+}
+
+/* ── Magna brand mark ────────────────────────────────────────────────────── */
+
+.magna-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    height: 100%;
+}
+
+.magna-brand-icon {
+    width: 1.875rem;
+    height: 1.875rem;
+    flex-shrink: 0;
+}
+
+.magna-brand-text {
+    font-size: 1.0625rem;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    /* Dark by default (light sidebar); the .dark override flips it for the
+       navy shell. Setting only the dark colour left this white-on-white and
+       invisible in light mode. */
+    color: var(--gray-900, #141b2d);
+    white-space: nowrap;
+}
+
+.dark .magna-brand-text {
+    color: var(--gray-100, #f1f5f9);
+}
+
+/* ── Mobile topbar brand mark ────────────────────────────────────────────── */
+/* Filament's own topbar logo slot (.fi-topbar-start) is display:none below
+   the lg breakpoint, so the brand mark only appeared once the mobile sidebar
+   drawer was opened. .fi-topbar-mobile-brand is a second copy, injected via a
+   TOPBAR_START render hook (AdminPanelProvider) — the hook fires before the
+   sidebar-toggle button in the DOM, so flex `order` re-positions it after the
+   toggle and before the search bar / avatar without touching vendor markup. */
+.fi-topbar-mobile-brand {
+    display: flex;
+    align-items: center;
+    order: 2;
+    margin-inline-start: 0.75rem;
+    margin-inline-end: auto;
+}
+
+.fi-topbar-open-sidebar-btn,
+.fi-topbar-close-sidebar-btn {
+    order: 1;
+}
+
+.fi-topbar-end {
+    order: 3;
+}
+
+@media (min-width: 64rem) {
+    .fi-topbar-mobile-brand {
+        /* Desktop already shows the real one via .fi-topbar-start. */
+        display: none;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SCROLLBARS
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+* {
+    scrollbar-width: thin;
+    scrollbar-color: #334155 transparent;
+}
+
+*::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+*::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+    background: #334155;
+    border-radius: 9999px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+    background: #475569;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LIVE-STATUS PULSE ANIMATION
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@keyframes magna-ping {
+    75%, 100% {
+        transform: scale(2);
+        opacity: 0;
+    }
+}
+
+.magna-live-dot {
+    position: relative;
+}
+
+.magna-live-dot::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 9999px;
+    background: inherit;
+    animation: magna-ping 1.6s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .magna-live-dot::after {
+        animation: none;
+    }
+}

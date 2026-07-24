@@ -1,0 +1,55 @@
+{
+    "handle": "cta",
+    "label": "Call to Action",
+    "icon": "heroicon-o-megaphone",
+    "category": "marketing",
+    "fields": [
+        {
+            "handle": "headline",
+            "type": "text",
+            "label": "Headline",
+            "required": true
+        },
+        {
+            "handle": "body",
+            "type": "textarea",
+            "label": "Body text",
+            "required": false
+        },
+        {
+            "handle": "button_primary_label",
+            "type": "text",
+            "label": "Primary button label",
+            "required": false
+        },
+        {
+            "handle": "button_primary_url",
+            "type": "url",
+            "label": "Primary button URL",
+            "required": false
+        },
+        {
+            "handle": "button_secondary_label",
+            "type": "text",
+            "label": "Secondary button label",
+            "required": false
+        },
+        {
+            "handle": "button_secondary_url",
+            "type": "url",
+            "label": "Secondary button URL",
+            "required": false
+        },
+        {
+            "handle": "layout",
+            "type": "select",
+            "label": "Layout",
+            "required": false,
+            "default": "centered",
+            "options": {
+                "centered": "Centered",
+                "left-right": "Left text, right buttons"
+            }
+        }
+    ]
+}

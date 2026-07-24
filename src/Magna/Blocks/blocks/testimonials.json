@@ -1,0 +1,25 @@
+{
+    "handle": "testimonials",
+    "label": "Testimonials",
+    "icon": "heroicon-o-chat-bubble-left-right",
+    "category": "marketing",
+    "fields": [
+        {
+            "handle": "items",
+            "type": "json",
+            "label": "Testimonial items (JSON array: [{quote, author, role, avatar_id}])",
+            "required": false
+        },
+        {
+            "handle": "layout",
+            "type": "select",
+            "label": "Layout",
+            "required": false,
+            "default": "cards",
+            "options": {
+                "cards": "Cards grid",
+                "carousel": "Carousel"
+            }
+        }
+    ]
+}

@@ -1,0 +1,56 @@
+{
+    "handle": "button",
+    "label": "Button",
+    "icon": "heroicon-o-cursor-arrow-rays",
+    "category": "content",
+    "fields": [
+        {
+            "handle": "label",
+            "type": "text",
+            "label": "Label",
+            "required": true
+        },
+        {
+            "handle": "url",
+            "type": "url",
+            "label": "URL",
+            "required": true
+        },
+        {
+            "handle": "style",
+            "type": "select",
+            "label": "Style",
+            "required": false,
+            "default": "primary",
+            "options": {
+                "primary": "Primary",
+                "secondary": "Secondary",
+                "outline": "Outline",
+                "ghost": "Ghost"
+            }
+        },
+        {
+            "handle": "size",
+            "type": "select",
+            "label": "Size",
+            "required": false,
+            "default": "md",
+            "options": {
+                "sm": "Small",
+                "md": "Medium",
+                "lg": "Large"
+            }
+        },
+        {
+            "handle": "target",
+            "type": "select",
+            "label": "Open in",
+            "required": false,
+            "default": "_self",
+            "options": {
+                "_self": "Same tab",
+                "_blank": "New tab"
+            }
+        }
+    ]
+}

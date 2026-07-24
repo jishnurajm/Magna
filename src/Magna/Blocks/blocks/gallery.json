@@ -1,0 +1,34 @@
+{
+    "handle": "gallery",
+    "label": "Gallery",
+    "icon": "heroicon-o-squares-2x2",
+    "category": "media",
+    "fields": [
+        {
+            "handle": "images",
+            "type": "media",
+            "label": "Images",
+            "required": false,
+            "multiple": true
+        },
+        {
+            "handle": "columns",
+            "type": "select",
+            "label": "Columns",
+            "required": false,
+            "default": "3",
+            "options": {
+                "2": "2 columns",
+                "3": "3 columns",
+                "4": "4 columns"
+            }
+        },
+        {
+            "handle": "lightbox",
+            "type": "boolean",
+            "label": "Enable lightbox",
+            "required": false,
+            "default": true
+        }
+    ]
+}

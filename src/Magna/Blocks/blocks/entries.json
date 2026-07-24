@@ -1,0 +1,47 @@
+{
+    "handle": "entries",
+    "label": "Entries",
+    "icon": "heroicon-o-rectangle-stack",
+    "category": "dynamic",
+    "fields": [
+        {
+            "handle": "content_type",
+            "type": "select",
+            "label": "Content type",
+            "required": true,
+            "optionsFrom": "Magna\\Blocks\\Options\\ContentTypeOptions"
+        },
+        {
+            "handle": "limit",
+            "type": "number",
+            "label": "Number of entries",
+            "required": false,
+            "default": 6
+        },
+        {
+            "handle": "sort",
+            "type": "select",
+            "label": "Sort by",
+            "required": false,
+            "default": "published_at_desc",
+            "options": {
+                "published_at_desc": "Newest first",
+                "published_at_asc": "Oldest first",
+                "title_asc": "Title A–Z",
+                "title_desc": "Title Z–A"
+            }
+        },
+        {
+            "handle": "display",
+            "type": "select",
+            "label": "Display",
+            "required": false,
+            "default": "cards",
+            "options": {
+                "cards": "Cards",
+                "list": "List",
+                "grid": "Grid"
+            }
+        }
+    ]
+}

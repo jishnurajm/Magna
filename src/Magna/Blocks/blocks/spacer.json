@@ -1,0 +1,23 @@
+{
+    "handle": "spacer",
+    "label": "Spacer",
+    "icon": "heroicon-o-arrows-up-down",
+    "category": "layout",
+    "fields": [
+        {
+            "handle": "size",
+            "type": "select",
+            "label": "Height",
+            "required": false,
+            "default": "md",
+            "options": {
+                "xs": "Extra small",
+                "sm": "Small",
+                "md": "Medium",
+                "lg": "Large",
+                "xl": "Extra large",
+                "2xl": "2× extra large"
+            }
+        }
+    ]
+}

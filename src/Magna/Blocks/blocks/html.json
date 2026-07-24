@@ -1,0 +1,14 @@
+{
+    "handle": "html",
+    "label": "HTML",
+    "icon": "heroicon-o-code-bracket",
+    "category": "content",
+    "fields": [
+        {
+            "handle": "content",
+            "type": "textarea",
+            "label": "HTML",
+            "required": false
+        }
+    ]
+}

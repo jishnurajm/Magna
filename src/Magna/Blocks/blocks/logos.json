@@ -1,0 +1,25 @@
+{
+    "handle": "logos",
+    "label": "Logo Bar",
+    "icon": "heroicon-o-building-office",
+    "category": "marketing",
+    "fields": [
+        {
+            "handle": "items",
+            "type": "json",
+            "label": "Logo items (JSON array: [{image_id, alt, url}])",
+            "required": false
+        },
+        {
+            "handle": "style",
+            "type": "select",
+            "label": "Style",
+            "required": false,
+            "default": "grayscale",
+            "options": {
+                "grayscale": "Greyscale",
+                "colored": "Coloured"
+            }
+        }
+    ]
+}

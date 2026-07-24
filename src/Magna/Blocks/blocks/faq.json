@@ -1,0 +1,14 @@
+{
+    "handle": "faq",
+    "label": "FAQ",
+    "icon": "heroicon-o-question-mark-circle",
+    "category": "marketing",
+    "fields": [
+        {
+            "handle": "items",
+            "type": "json",
+            "label": "FAQ items (JSON array: [{question, answer}])",
+            "required": false
+        }
+    ]
+}

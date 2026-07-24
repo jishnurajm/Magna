@@ -1,0 +1,28 @@
+{
+    "handle": "divider",
+    "label": "Divider",
+    "icon": "heroicon-o-minus",
+    "category": "layout",
+    "fields": [
+        {
+            "handle": "style",
+            "type": "select",
+            "label": "Style",
+            "required": false,
+            "default": "solid",
+            "options": {
+                "solid": "Solid",
+                "dashed": "Dashed",
+                "dotted": "Dotted",
+                "icon-center": "Icon Centred"
+            }
+        },
+        {
+            "handle": "icon",
+            "type": "text",
+            "label": "Icon (Heroicon name, only for icon-centre style)",
+            "required": false,
+            "default": "heroicon-o-star"
+        }
+    ]
+}

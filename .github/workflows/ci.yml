@@ -1,0 +1,183 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    name: PHP ${{ matrix.php }} / ${{ matrix.db }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.3', '8.4']
+        db: [sqlite, pgsql]
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: magna_test
+          POSTGRES_USER: magna
+          POSTGRES_PASSWORD: secret
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U magna"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mbstring, intl, pdo_sqlite, pdo_pgsql, redis
+          coverage: none
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Prepare environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: Configure SQLite
+        if: matrix.db == 'sqlite'
+        run: touch database/database.sqlite
+
+      - name: Configure PostgreSQL
+        if: matrix.db == 'pgsql'
+        run: |
+          {
+            echo "DB_CONNECTION=pgsql"
+            echo "DB_HOST=127.0.0.1"
+            echo "DB_PORT=5432"
+            echo "DB_DATABASE=magna_test"
+            echo "DB_USERNAME=magna"
+            echo "DB_PASSWORD=secret"
+          } >> .env
+
+      - name: Code style (Pint)
+        run: php vendor/bin/pint --test
+
+      - name: Static analysis (PHPStan level 9)
+        run: php vendor/bin/phpstan analyse --memory-limit=1G --no-progress
+
+      - name: Tests (Pest)
+        run: php artisan test
+
+  octane-smoke:
+    name: Octane / FrankenPHP smoke test
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: magna_test
+          POSTGRES_USER: magna
+          POSTGRES_PASSWORD: secret
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U magna"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP 8.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, intl, pdo_pgsql, redis, pcntl
+          coverage: none
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Install Octane
+        run: composer require laravel/octane --no-interaction --no-progress
+
+      - name: Prepare environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+          {
+            echo "DB_CONNECTION=pgsql"
+            echo "DB_HOST=127.0.0.1"
+            echo "DB_PORT=5432"
+            echo "DB_DATABASE=magna_test"
+            echo "DB_USERNAME=magna"
+            echo "DB_PASSWORD=secret"
+            echo "REDIS_HOST=127.0.0.1"
+            echo "REDIS_PORT=6379"
+            echo "CACHE_STORE=redis"
+            echo "MAGNA_INSTALLED=true"
+          } >> .env
+          php artisan migrate --force
+
+      - name: Install FrankenPHP binary
+        run: |
+          curl -L https://github.com/dunglas/frankenphp/releases/latest/download/frankenphp-linux-x86_64 \
+            -o /usr/local/bin/frankenphp && chmod +x /usr/local/bin/frankenphp
+
+      - name: Boot under Octane and smoke-test
+        run: |
+          php artisan octane:frankenphp --port=8100 &
+          OCTANE_PID=$!
+          sleep 5
+
+          # Smoke test: health endpoint must return 200
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8100/api/v1/health 2>/dev/null || echo "000")
+          echo "Health check response: ${STATUS}"
+
+          # Make 10 sequential requests to detect worker-mode leaks (shared state
+          # that persists across requests causes diverging responses)
+          for i in $(seq 1 10); do
+            R=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8100/api/v1/health)
+            [ "$R" = "200" ] || { echo "Request $i returned $R"; kill $OCTANE_PID; exit 1; }
+          done
+
+          kill $OCTANE_PID
+
+  audit:
+    name: Dependency audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+      - run: composer install --prefer-dist --no-interaction --no-progress
+      - run: composer audit
+
+  psalm:
+    name: Psalm taint analysis
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+      - run: composer install --prefer-dist --no-interaction --no-progress
+      - name: Run Psalm taint analysis on auth + delivery + management paths
+        run: vendor/bin/psalm --taint-analysis --no-progress --output-format=github

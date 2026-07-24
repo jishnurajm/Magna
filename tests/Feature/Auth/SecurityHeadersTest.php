@@ -1,0 +1,42 @@
+<?php
+
+declare(strict_types=1);
+use Illuminate\Support\Facades\Route;
+
+it('attaches security headers to web responses', function (): void {
+    // "/" redirects guests to the panel login; assert on the 200 login page.
+    $response = $this->get('/login');
+
+    $response->assertHeader('X-Content-Type-Options', 'nosniff');
+    $response->assertHeader('X-Frame-Options', 'DENY');
+    $response->assertHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    $response->assertHeader('Strict-Transport-Security');
+});
+
+it('attaches security headers to API responses', function (): void {
+    $response = $this->getJson('/api/v1/tokens');
+
+    $response->assertHeader('X-Content-Type-Options', 'nosniff');
+    $response->assertHeader('X-Frame-Options', 'DENY');
+    $response->assertHeader('Strict-Transport-Security');
+});
+
+it('adds CSP when admin-csp middleware is applied', function (): void {
+    // Manually hit a route with the admin CSP middleware applied inline
+    Route::get('/_test_csp', function () {
+        return 'ok';
+    })->middleware('magna.admin-csp');
+
+    $response = $this->get('/_test_csp');
+
+    $response->assertHeader('Content-Security-Policy');
+    $csp = $response->headers->get('Content-Security-Policy', '');
+    expect($csp)->toContain("frame-ancestors 'none'");
+    expect($csp)->toContain("default-src 'self'");
+});
+
+it('login page has security headers', function (): void {
+    $this->get(route('auth.login'))
+        ->assertHeader('X-Content-Type-Options', 'nosniff')
+        ->assertHeader('X-Frame-Options', 'DENY');
+});

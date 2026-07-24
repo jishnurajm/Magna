@@ -1,0 +1,49 @@
+<?xml version="1.0"?>
+<psalm
+    errorLevel="4"
+    resolveFromConfigFile="true"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns="https://getpsalm.org/schema/config"
+    xsi:schemaLocation="https://getpsalm.org/schema/config vendor/vimeo/psalm/config.xsd"
+    findUnusedVariablesAndParams="false"
+    reportMixedIssues="false"
+>
+    <!-- Taint analysis tracks untrusted user input (sources) to dangerous sinks
+         (SQL queries, shell commands, HTTP responses, file writes).
+         Only the API-boundary and auth layers are analysed here; the admin
+         panel uses Filament's own sanitisation pipeline and is excluded. -->
+
+    <projectFiles>
+        <directory name="src/Magna/Auth"/>
+        <directory name="src/Magna/Delivery/Controllers"/>
+        <directory name="src/Magna/Management/Controllers"/>
+        <directory name="src/Magna/Install/Http"/>
+        <ignoreFiles>
+            <directory name="vendor"/>
+        </ignoreFiles>
+    </projectFiles>
+
+    <!-- Taint analysis is enabled via the "taint-analysis" CLI flag (or CI config),
+         not via a plugin. Psalm\Plugin\Shepherd is only for uploading results to
+         Psalm's cloud dashboard and requires the psalm/plugin-shepherd Composer
+         package, which isn't installed — declaring it here crashed every run. -->
+
+    <!-- Taint source: any Illuminate\Http\Request method that returns user-controlled input -->
+    <taintAnalysis>
+        <ignoreFiles>
+            <file name="vendor/**"/>
+        </ignoreFiles>
+    </taintAnalysis>
+
+    <issueHandlers>
+        <!-- These issues are informational at error level 4; suppress known Psalm/Laravel mismatches -->
+        <MissingReturnType errorLevel="suppress"/>
+        <MixedAssignment errorLevel="suppress"/>
+        <MixedArgumentTypeCoercion errorLevel="suppress"/>
+        <!-- PossiblyUndefinedVariable: Laravel facades are magic, suppress -->
+        <PossiblyUndefinedVariable errorLevel="suppress"/>
+        <!-- UndefinedClass: Filament stubs not present in Psalm's analysis -->
+        <UndefinedClass errorLevel="suppress"/>
+        <UndefinedDocblockClass errorLevel="suppress"/>
+    </issueHandlers>
+</psalm>

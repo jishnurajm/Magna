@@ -1,0 +1,14 @@
+FROM dunglas/frankenphp:latest-php8.4
+
+WORKDIR /app
+
+# Install required PHP extensions
+RUN install-php-extensions pdo_pgsql redis intl mbstring pcntl
+
+COPY . /app
+
+RUN composer install --no-dev --no-interaction --optimize-autoloader
+
+EXPOSE 8000
+
+CMD ["php", "artisan", "octane:frankenphp", "--port=8000", "--host=0.0.0.0"]

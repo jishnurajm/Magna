@@ -1,0 +1,62 @@
+{
+    "handle": "hero",
+    "label": "Hero",
+    "icon": "heroicon-o-sparkles",
+    "category": "marketing",
+    "fields": [
+        {
+            "handle": "headline",
+            "type": "text",
+            "label": "Headline",
+            "required": true
+        },
+        {
+            "handle": "subheadline",
+            "type": "textarea",
+            "label": "Subheadline",
+            "required": false
+        },
+        {
+            "handle": "background_id",
+            "type": "media",
+            "label": "Background image/video",
+            "required": false
+        },
+        {
+            "handle": "cta_primary_label",
+            "type": "text",
+            "label": "Primary CTA label",
+            "required": false
+        },
+        {
+            "handle": "cta_primary_url",
+            "type": "url",
+            "label": "Primary CTA URL",
+            "required": false
+        },
+        {
+            "handle": "cta_secondary_label",
+            "type": "text",
+            "label": "Secondary CTA label",
+            "required": false
+        },
+        {
+            "handle": "cta_secondary_url",
+            "type": "url",
+            "label": "Secondary CTA URL",
+            "required": false
+        },
+        {
+            "handle": "layout",
+            "type": "select",
+            "label": "Layout",
+            "required": false,
+            "default": "centered",
+            "options": {
+                "centered": "Centered",
+                "left-text-right-image": "Left text, right image",
+                "full-bleed": "Full bleed"
+            }
+        }
+    ]
+}

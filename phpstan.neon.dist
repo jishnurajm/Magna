@@ -1,0 +1,29 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+
+parameters:
+    level: 9
+
+    paths:
+        - app
+        - src
+        - database
+
+    # Filament 5 resource and page classes are Livewire components with extensive
+    # magic property access, dynamic closures, and fluent component builders that
+    # PHPStan cannot fully type at level 9. The property.nativeType / property.static
+    # errors they produce are marked ignorable:false by PHPStan, so they must be
+    # excluded by path rather than via ignoreErrors. Everything else stays at level 9.
+    excludePaths:
+        - src/Magna/Admin
+        # Reusable trait offered to plugin authors (documented in
+        # plugin-development-guide.md). Its only consumers are Filament pages
+        # (excluded above) and installed plugins (outside PHPStan's paths), so it
+        # structurally reads as "unused" here even though it is part of the public
+        # extension API — the same modelling limitation as the Filament exclusion.
+        - src/Magna/Media/Concerns/IngestsMedia.php
+        # Livewire component with deeply nested dynamic `public array $sections`
+        # that Livewire hydrates and mutates at runtime. PHPStan cannot narrow the
+        # nested mixed types through reference-based mutations and array_splice calls
+        # — the same structural limitation as the Filament Livewire page exclusion above.
+        - src/Magna/Blocks/Livewire

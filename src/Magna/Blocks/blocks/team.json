@@ -1,0 +1,26 @@
+{
+    "handle": "team",
+    "label": "Team",
+    "icon": "heroicon-o-user-group",
+    "category": "marketing",
+    "fields": [
+        {
+            "handle": "members",
+            "type": "json",
+            "label": "Team members (JSON array: [{name, role, bio, photo_id}])",
+            "required": false
+        },
+        {
+            "handle": "columns",
+            "type": "select",
+            "label": "Columns",
+            "required": false,
+            "default": "3",
+            "options": {
+                "2": "2 columns",
+                "3": "3 columns",
+                "4": "4 columns"
+            }
+        }
+    ]
+}

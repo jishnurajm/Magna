@@ -1,0 +1,25 @@
+{
+    "handle": "features",
+    "label": "Features",
+    "icon": "heroicon-o-check-badge",
+    "category": "marketing",
+    "fields": [
+        {
+            "handle": "items",
+            "type": "json",
+            "label": "Feature items (JSON array: [{icon, title, description}])",
+            "required": false
+        },
+        {
+            "handle": "layout",
+            "type": "select",
+            "label": "Layout",
+            "required": false,
+            "default": "icon-grid",
+            "options": {
+                "icon-grid": "Icon grid",
+                "horizontal-list": "Horizontal list"
+            }
+        }
+    ]
+}

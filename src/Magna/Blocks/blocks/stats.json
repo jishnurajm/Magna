@@ -1,0 +1,26 @@
+{
+    "handle": "stats",
+    "label": "Stats",
+    "icon": "heroicon-o-chart-bar",
+    "category": "marketing",
+    "fields": [
+        {
+            "handle": "items",
+            "type": "json",
+            "label": "Stat items (JSON array: [{value, label, icon}])",
+            "required": false
+        },
+        {
+            "handle": "columns",
+            "type": "select",
+            "label": "Columns",
+            "required": false,
+            "default": "3",
+            "options": {
+                "2": "2 columns",
+                "3": "3 columns",
+                "4": "4 columns"
+            }
+        }
+    ]
+}

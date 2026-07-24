@@ -1,0 +1,39 @@
+{
+    "handle": "image",
+    "label": "Image",
+    "icon": "heroicon-o-photo",
+    "category": "media",
+    "fields": [
+        {
+            "handle": "media_id",
+            "type": "media",
+            "label": "Image",
+            "required": false
+        },
+        {
+            "handle": "alt",
+            "type": "text",
+            "label": "Alt text",
+            "required": false
+        },
+        {
+            "handle": "caption",
+            "type": "text",
+            "label": "Caption",
+            "required": false
+        },
+        {
+            "handle": "display",
+            "type": "select",
+            "label": "Display",
+            "required": false,
+            "default": "full",
+            "options": {
+                "full": "Full width",
+                "float-left": "Float left",
+                "float-right": "Float right",
+                "captioned": "Captioned"
+            }
+        }
+    ]
+}

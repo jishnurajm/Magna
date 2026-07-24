@@ -92,11 +92,11 @@
 
 ## Download Magna
 
-Ready to try Magna CMS? Grab the latest install package — unzip, run the installer, done.
+Ready to try Magna CMS? Grab the latest release — download it, run the installer, and you're ready to go.
 
-[![Download Magna CMS](https://img.shields.io/badge/Download-Magna%20CMS%20v1.2.0-7c3aed?style=for-the-badge&logo=github&logoColor=white)]([https://github.com/Magna-CMS/Magna/raw/Development/downloads/magna-cms-v1.2.0.zip](https://github.com/Magna-CMS/Magna/releases)](https://github.com/Magna-CMS/Magna/releases))
+[![Download Magna CMS](https://img.shields.io/badge/Download-Magna%20CMS%20v1.2.0-7c3aed?style=for-the-badge&logo=github&logoColor=white)](https://github.com/Magna-CMS/Magna/releases)
 
-**[⬇ Download magna-cms-v1.2.0.zip]([https://github.com/Magna-CMS/Magna/raw/Development/downloads/magna-cms-v1.2.0.zip](https://github.com/Magna-CMS/Magna/releases)](https://github.com/Magna-CMS/Magna/releases))**
+**[⬇ Download Magna CMS v1.2.0](https://github.com/Magna-CMS/Magna/releases)**
 
 
 ---
